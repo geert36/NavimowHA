@@ -26,6 +26,7 @@ class NavimowSensorEntityDescription(SensorEntityDescription):
     """Describes Navimow sensor entity."""
 
     value_fn: Callable[[NavimowCoordinator], Any]
+    attributes_fn: Callable[[NavimowCoordinator], dict[str, Any]] | None = None
 
 
 SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
@@ -58,7 +59,41 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
             else None
         ),
     ),
+    NavimowSensorEntityDescription(
+        key="telemetry",
+        name="Telemetry",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:radio-tower",
+        value_fn=lambda coordinator: (
+            state.state if (state := coordinator.get_device_state()) else None
+        ),
+        attributes_fn=lambda coordinator: _build_telemetry_attributes(coordinator),
+    ),
 )
+
+
+def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
+    """Expose raw MQTT-derived data for troubleshooting and feature discovery."""
+    state = coordinator.get_device_state()
+    attrs = coordinator.get_device_attributes()
+
+    telemetry: dict[str, Any] = {}
+    if state:
+        telemetry["timestamp"] = state.timestamp
+        telemetry["status"] = state.state
+        if state.battery is not None:
+            telemetry["battery"] = state.battery
+        if state.signal_strength is not None:
+            telemetry["signal_strength"] = state.signal_strength
+        if state.position:
+            telemetry["position"] = state.position
+        if state.error:
+            telemetry["error"] = state.error
+        if state.metrics:
+            telemetry["metrics"] = state.metrics
+    if attrs and attrs.attributes:
+        telemetry["attributes"] = attrs.attributes
+    return telemetry
 
 
 async def async_setup_entry(
@@ -119,3 +154,10 @@ class NavimowSensor(CoordinatorEntity[NavimowCoordinator], SensorEntity):
     def native_value(self) -> Any:
         """Return sensor value from coordinator."""
         return self.entity_description.value_fn(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return optional debug attributes for this sensor."""
+        if self.entity_description.attributes_fn is None:
+            return {}
+        return self.entity_description.attributes_fn(self.coordinator)
