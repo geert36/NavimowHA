@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -37,6 +37,25 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda coordinator: (
             state.battery if (state := coordinator.get_device_state()) else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="signal_strength",
+        name="Signal strength",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda coordinator: (
+            state.signal_strength if (state := coordinator.get_device_state()) else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="error_code",
+        name="Error code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: (
+            state.error.get("code")
+            if (state := coordinator.get_device_state()) and state.error
+            else None
         ),
     ),
 )
