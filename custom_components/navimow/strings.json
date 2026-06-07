@@ -30,6 +30,12 @@
         "title": "Navimow 选项",
         "description": "配置 Navimow 集成选项"
       }
+    },
+    "data": {
+      "zone_names_json": "Zone names JSON"
+    },
+    "data_description": {
+      "zone_names_json": "Map partition ids to friendly names, for example {\"5\": \"Voortuin\", \"6\": \"Achtertuin\"}."
     }
   }
 }
