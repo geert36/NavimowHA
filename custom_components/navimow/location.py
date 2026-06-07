@@ -1,6 +1,7 @@
 """Real-time location and zone decoding for Navimow."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -46,6 +47,7 @@ def parse_location_payload(
                 location["vehicle_state"] = item["vehicleState"]
             if "time" in item:
                 location["pose_time"] = item["time"]
+                location["pose_time_iso"] = _format_unix_milliseconds(item["time"])
             changed = True
         elif payload_type == 2:
             if "action" in item:
@@ -64,12 +66,15 @@ def parse_location_payload(
                 location["mowing_percentage"] = _coerce_number(
                     item["mowingPercentage"]
                 )
-            if "mowingWeakArea" in item:
-                location["mowing_weak_area"] = _coerce_number(item["mowingWeakArea"])
+            if "mowingWeekArea" in item:
+                location["mowing_week_area"] = _coerce_number(item["mowingWeekArea"])
             if "subtotalArea" in item:
                 location["subtotal_area"] = _coerce_number(item["subtotalArea"])
             if "time" in item:
                 location["mow_progress_time"] = item["time"]
+                location["mow_progress_time_iso"] = _format_unix_milliseconds(
+                    item["time"]
+                )
             changed = True
         elif payload_type == 3:
             partition_ids = item.get("partitionIds")
@@ -110,3 +115,12 @@ def _coerce_number(value: Any) -> int | float | str | None:
     if number.is_integer():
         return int(number)
     return number
+
+
+def _format_unix_milliseconds(value: Any) -> str | None:
+    """Convert a Unix timestamp in milliseconds into an ISO UTC string."""
+    try:
+        milliseconds = int(value)
+    except (TypeError, ValueError):
+        return None
+    return datetime.fromtimestamp(milliseconds / 1000, tz=timezone.utc).isoformat()
