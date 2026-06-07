@@ -29,6 +29,7 @@ from .const import (
     MQTT_STALE_SECONDS,
     UPDATE_INTERVAL,
 )
+from .location import location_topic, position_topic
 from .position import position_dict
 
 _LOGGER = logging.getLogger(__name__)
@@ -68,6 +69,10 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_data_source: str | None = None
         self._last_location_topic: str | None = None
         self._last_position_topic: str | None = None
+        self._last_raw_state_message: dict[str, Any] | None = None
+        self._last_raw_attributes_message: dict[str, Any] | None = None
+        self._last_raw_event_message: dict[str, Any] | None = None
+        self._last_raw_position_payload: Any = None
 
     async def async_setup(self) -> None:
         """Register callbacks from SDK."""
@@ -88,6 +93,23 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "last_http_fetch_monotonic": self._last_http_fetch,
                 "last_location_topic": self._last_location_topic,
                 "last_position_topic": self._last_position_topic,
+            },
+            "debug": {
+                "expected_location_topic": location_topic(self.device.id),
+                "expected_position_topic": position_topic(self.device.id),
+                "raw_state_message": self._last_raw_state_message,
+                "raw_attributes_message": self._last_raw_attributes_message,
+                "raw_event_message": self._last_raw_event_message,
+                "raw_location_payload": (
+                    self._last_location.get("raw_payload") if self._last_location else None
+                ),
+                "raw_position_payload": self._last_raw_position_payload,
+                "last_location_payload_types": (
+                    self._last_location.get("payload_types") if self._last_location else None
+                ),
+                "last_unknown_location_items": (
+                    self._last_location.get("unknown_items") if self._last_location else None
+                ),
             },
         }
 
@@ -149,11 +171,13 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         cached_state = self.sdk.get_cached_state(self.device.id)
         if cached_state is not None:
             self._last_state = self._state_with_known_position(cached_state)
+            self._last_raw_state_message = _serialize_debug_value(cached_state)
             self._last_data_source = "mqtt_cache"
 
         cached_attrs = self.sdk.get_cached_attributes(self.device.id)
         if cached_attrs is not None:
             self._last_attributes = cached_attrs
+            self._last_raw_attributes_message = _serialize_debug_value(cached_attrs)
 
         now = time.monotonic()
         is_mqtt_stale = (
@@ -167,9 +191,9 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if is_mqtt_stale and can_http_fetch:
             try:
                 status = await self.api.async_get_device_status(self.device.id)
-                self._last_state = self._state_with_known_position(
-                    self._device_status_to_state(status)
-                )
+                fallback_state = self._device_status_to_state(status)
+                self._last_state = self._state_with_known_position(fallback_state)
+                self._last_raw_state_message = _serialize_debug_value(fallback_state)
                 self._last_http_fetch = now
                 self._last_data_source = "http_fallback"
             except ConfigEntryAuthFailed:
@@ -230,15 +254,18 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _update_from_state(self, state: DeviceStateMessage) -> None:
         self._last_state = self._state_with_known_position(state)
+        self._last_raw_state_message = _serialize_debug_value(state)
         self._last_data_source = "mqtt_push"
         self.async_set_updated_data(self._build_data())
 
     def _update_from_event(self, event: DeviceEventMessage) -> None:
         self._last_event = event
+        self._last_raw_event_message = _serialize_debug_value(event)
         self.async_set_updated_data(self._build_data())
 
     def _update_from_attributes(self, attrs: DeviceAttributesMessage) -> None:
         self._last_attributes = attrs
+        self._last_raw_attributes_message = _serialize_debug_value(attrs)
         self.async_set_updated_data(self._build_data())
 
     def ingest_location(
@@ -259,6 +286,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if normalized_position is None:
             return False
 
+        self._last_raw_position_payload = _serialize_debug_value(payload)
         self._last_position = normalized_position
         self._last_position_topic = topic
         self._last_mqtt_update = time.monotonic()
@@ -373,3 +401,23 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def get_device_meta(self) -> dict[str, Any]:
         return self.data.get("meta", {})
+
+    def get_device_debug(self) -> dict[str, Any]:
+        return self.data.get("debug", {})
+
+
+def _serialize_debug_value(value: Any) -> Any:
+    """Convert SDK messages and payloads into telemetry-friendly data."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _serialize_debug_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_serialize_debug_value(item) for item in value]
+    if hasattr(value, "__dict__"):
+        return {
+            key: _serialize_debug_value(item)
+            for key, item in vars(value).items()
+            if not key.startswith("_")
+        }
+    return str(value)

@@ -223,6 +223,7 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
     attrs = coordinator.get_device_attributes()
     location = coordinator.get_device_location()
     meta = coordinator.get_device_meta()
+    debug = coordinator.get_device_debug()
 
     telemetry: dict[str, Any] = {}
     if state:
@@ -255,6 +256,8 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
         telemetry["vehicle_state_label"] = coordinator.get_vehicle_state_label()
     if meta:
         telemetry["meta"] = meta
+    if debug and any(value is not None for value in debug.values()):
+        telemetry["debug"] = debug
     return telemetry
 
 
