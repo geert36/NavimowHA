@@ -57,5 +57,5 @@ def async_setup_services(hass: HomeAssistant, sdk: NavimowSDK) -> None:
         DOMAIN,
         SERVICE_SET_BLADE_HEIGHT,
         _handle_set_blade_height,
-        schema=SERVICE_SCHEMA_SET_BLA_HEIGHT,
+        schema=SERVICE_SCHEMA_SET_BLADE_HEIGHT,
     )
