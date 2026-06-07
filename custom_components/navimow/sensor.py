@@ -74,6 +74,18 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         attributes_fn=lambda coordinator: _build_zone_attributes(coordinator),
     ),
     NavimowSensorEntityDescription(
+        key="mowing_percentage",
+        name="Mowing percentage",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda coordinator: (
+            location.get("mowing_percentage")
+            if (location := coordinator.get_device_location())
+            else None
+        ),
+        attributes_fn=lambda coordinator: _build_mowing_progress_attributes(coordinator),
+    ),
+    NavimowSensorEntityDescription(
         key="position_x",
         name="Position X",
         native_unit_of_measurement="m",
@@ -126,6 +138,23 @@ def _build_zone_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
     return {
         "partition": location.get("partition"),
         "partition_ids": location.get("partition_ids"),
+    }
+
+
+def _build_mowing_progress_attributes(
+    coordinator: NavimowCoordinator,
+) -> dict[str, Any]:
+    """Return raw mowing-progress fields from the realtime payload."""
+    location = coordinator.get_device_location()
+    if not location:
+        return {}
+    return {
+        "current_mow_boundary": location.get("current_mow_boundary"),
+        "current_mow_progress": location.get("current_mow_progress"),
+        "subtotal_area": location.get("subtotal_area"),
+        "mowing_weak_area": location.get("mowing_weak_area"),
+        "mow_action": location.get("mow_action"),
+        "mow_start_type": location.get("mow_start_type"),
     }
 
 
