@@ -152,9 +152,11 @@ def _build_mowing_progress_attributes(
         "current_mow_boundary": location.get("current_mow_boundary"),
         "current_mow_progress": location.get("current_mow_progress"),
         "subtotal_area": location.get("subtotal_area"),
-        "mowing_weak_area": location.get("mowing_weak_area"),
+        "mowing_week_area": location.get("mowing_week_area"),
         "mow_action": location.get("mow_action"),
         "mow_start_type": location.get("mow_start_type"),
+        "mow_progress_time": location.get("mow_progress_time"),
+        "mow_progress_time_iso": location.get("mow_progress_time_iso"),
     }
 
 
