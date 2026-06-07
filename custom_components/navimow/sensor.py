@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import PERCENTAGE, UnitOfArea
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -84,6 +84,38 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
             else None
         ),
         attributes_fn=lambda coordinator: _build_mowing_progress_attributes(coordinator),
+    ),
+    NavimowSensorEntityDescription(
+        key="subtotal_area",
+        name="Subtotal area",
+        native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda coordinator: (
+            location.get("subtotal_area")
+            if (location := coordinator.get_device_location())
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="mowing_week_area",
+        name="Mowing week area",
+        native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda coordinator: (
+            location.get("mowing_week_area")
+            if (location := coordinator.get_device_location())
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="mow_start_type",
+        name="Mow start type",
+        value_fn=lambda coordinator: (
+            location.get("mow_start_type")
+            if (location := coordinator.get_device_location())
+            else None
+        ),
+        attributes_fn=lambda coordinator: _build_mow_start_type_attributes(coordinator),
     ),
     NavimowSensorEntityDescription(
         key="position_x",
@@ -158,6 +190,30 @@ def _build_mowing_progress_attributes(
         "mow_progress_time": location.get("mow_progress_time"),
         "mow_progress_time_iso": location.get("mow_progress_time_iso"),
     }
+
+
+def _build_mow_start_type_attributes(
+    coordinator: NavimowCoordinator,
+) -> dict[str, Any]:
+    """Return a readable hint for the mow start type code."""
+    location = coordinator.get_device_location()
+    if not location:
+        return {}
+
+    mow_start_type = location.get("mow_start_type")
+    if mow_start_type is None:
+        return {}
+
+    label = _mow_start_type_label(mow_start_type)
+    return {"label": label} if label else {}
+
+
+def _mow_start_type_label(value: Any) -> str | None:
+    """Map known mow start type codes to readable labels."""
+    mapping = {
+        1: "manual",
+    }
+    return mapping.get(value)
 
 
 def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
