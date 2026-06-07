@@ -1,6 +1,7 @@
 """Sensor platform for Navimow integration."""
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -60,12 +61,58 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         ),
     ),
     NavimowSensorEntityDescription(
+        key="zone",
+        name="Zone",
+        icon="mdi:map-marker",
+        value_fn=lambda coordinator: (
+            location.get("partition")
+            if (location := coordinator.get_device_location())
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="position_x",
+        name="Position X",
+        native_unit_of_measurement="m",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda coordinator: (
+            location.get("x") if (location := coordinator.get_device_location()) else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="position_y",
+        name="Position Y",
+        native_unit_of_measurement="m",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda coordinator: (
+            location.get("y") if (location := coordinator.get_device_location()) else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="heading",
+        name="Heading",
+        native_unit_of_measurement="°",
+        icon="mdi:compass",
+        value_fn=lambda coordinator: (
+            round(math.degrees(location["theta"]) % 360, 1)
+            if (location := coordinator.get_device_location())
+            and location.get("theta") is not None
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
         key="telemetry",
         name="Telemetry",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:radio-tower",
         value_fn=lambda coordinator: (
-            state.state if (state := coordinator.get_device_state()) else None
+            state.state
+            if (state := coordinator.get_device_state())
+            else (
+                location.get("vehicle_state")
+                if (location := coordinator.get_device_location())
+                else None
+            )
         ),
         attributes_fn=lambda coordinator: _build_telemetry_attributes(coordinator),
     ),
@@ -77,6 +124,7 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
     state = coordinator.get_device_state()
     event = coordinator.get_device_event()
     attrs = coordinator.get_device_attributes()
+    location = coordinator.get_device_location()
     meta = coordinator.get_device_meta()
 
     telemetry: dict[str, Any] = {}
@@ -104,6 +152,8 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
         }
     if attrs and attrs.attributes:
         telemetry["attributes"] = attrs.attributes
+    if location:
+        telemetry["location"] = location
     if meta:
         telemetry["meta"] = meta
     return telemetry
@@ -160,6 +210,8 @@ class NavimowSensor(CoordinatorEntity[NavimowCoordinator], SensorEntity):
     @property
     def available(self) -> bool:
         if self.coordinator.get_device_state() is not None:
+            return True
+        if self.coordinator.get_device_location() is not None:
             return True
         return super().available
 

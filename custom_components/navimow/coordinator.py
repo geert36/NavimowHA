@@ -25,6 +25,7 @@ from .const import (
     MQTT_STALE_SECONDS,
     UPDATE_INTERVAL,
 )
+from .position import position_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,9 +55,13 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_state: DeviceStateMessage | None = None
         self._last_attributes: DeviceAttributesMessage | None = None
         self._last_event: DeviceEventMessage | None = None
+        self._last_location: dict[str, Any] | None = None
+        self._last_position: dict[str, float] | None = None
         self._last_mqtt_update: float | None = None
         self._last_http_fetch: float | None = None
         self._last_data_source: str | None = None
+        self._last_location_topic: str | None = None
+        self._last_position_topic: str | None = None
 
     async def async_setup(self) -> None:
         """Register callbacks from SDK."""
@@ -70,10 +75,13 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "state": self._last_state,
             "attributes": self._last_attributes,
             "event": self._last_event,
+            "location": self._last_location,
             "meta": {
                 "last_data_source": self._last_data_source,
                 "last_mqtt_update_monotonic": self._last_mqtt_update,
                 "last_http_fetch_monotonic": self._last_http_fetch,
+                "last_location_topic": self._last_location_topic,
+                "last_position_topic": self._last_position_topic,
             },
         }
 
@@ -134,7 +142,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         cached_state = self.sdk.get_cached_state(self.device.id)
         if cached_state is not None:
-            self._last_state = cached_state
+            self._last_state = self._state_with_known_position(cached_state)
             self._last_data_source = "mqtt_cache"
 
         cached_attrs = self.sdk.get_cached_attributes(self.device.id)
@@ -153,7 +161,9 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if is_mqtt_stale and can_http_fetch:
             try:
                 status = await self.api.async_get_device_status(self.device.id)
-                self._last_state = self._device_status_to_state(status)
+                self._last_state = self._state_with_known_position(
+                    self._device_status_to_state(status)
+                )
                 self._last_http_fetch = now
                 self._last_data_source = "http_fallback"
             except ConfigEntryAuthFailed:
@@ -184,7 +194,9 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._last_mqtt_update = time.monotonic()
         self._last_data_source = "mqtt_push"
-        self.hass.loop.call_soon_threadsafe(self._update_from_state, state)
+        self.hass.loop.call_soon_threadsafe(
+            self._update_from_state, self._state_with_known_position(state)
+        )
 
     def _handle_event(self, event: DeviceEventMessage) -> None:
         if event.device_id != self.device.id:
@@ -211,7 +223,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.loop.call_soon_threadsafe(self._update_from_attributes, attrs)
 
     def _update_from_state(self, state: DeviceStateMessage) -> None:
-        self._last_state = state
+        self._last_state = self._state_with_known_position(state)
         self._last_data_source = "mqtt_push"
         self.async_set_updated_data(self._build_data())
 
@@ -222,6 +234,90 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _update_from_attributes(self, attrs: DeviceAttributesMessage) -> None:
         self._last_attributes = attrs
         self.async_set_updated_data(self._build_data())
+
+    def ingest_location(
+        self, location: dict[str, Any], topic: str | None = None
+    ) -> None:
+        """Store decoded realtime location updates."""
+        if location.get("device_id") not in (None, self.device.id):
+            return
+        self._last_location = location
+        self._last_location_topic = topic
+        self._last_mqtt_update = time.monotonic()
+        self._last_data_source = "mqtt_location"
+        self.async_set_updated_data(self._build_data())
+
+    def ingest_position(self, payload: Any, topic: str | None = None) -> bool:
+        """Merge realtime position updates into the cached state."""
+        normalized_position = position_dict(payload)
+        if normalized_position is None:
+            return False
+
+        self._last_position = normalized_position
+        self._last_position_topic = topic
+        self._last_mqtt_update = time.monotonic()
+        self._last_data_source = "mqtt_position"
+
+        state = self._last_state
+        if state is None:
+            state = DeviceStateMessage(
+                device_id=self.device.id,
+                timestamp=None,
+                state="unknown",
+                battery=None,
+                signal_strength=None,
+                position=normalized_position,
+                error=None,
+                metrics=None,
+            )
+        else:
+            state = DeviceStateMessage(
+                device_id=state.device_id,
+                timestamp=state.timestamp,
+                state=state.state,
+                battery=state.battery,
+                signal_strength=state.signal_strength,
+                position=normalized_position,
+                error=state.error,
+                metrics=state.metrics,
+            )
+
+        self._last_state = state
+        self.async_set_updated_data(self._build_data())
+        return True
+
+    def _state_with_known_position(
+        self, state: DeviceStateMessage
+    ) -> DeviceStateMessage:
+        normalized_position = position_dict(state.position)
+        if normalized_position is not None:
+            self._last_position = normalized_position
+            if state.position == normalized_position:
+                return state
+            return DeviceStateMessage(
+                device_id=state.device_id,
+                timestamp=state.timestamp,
+                state=state.state,
+                battery=state.battery,
+                signal_strength=state.signal_strength,
+                position=normalized_position,
+                error=state.error,
+                metrics=state.metrics,
+            )
+
+        if self._last_position is None:
+            return state
+
+        return DeviceStateMessage(
+            device_id=state.device_id,
+            timestamp=state.timestamp,
+            state=state.state,
+            battery=state.battery,
+            signal_strength=state.signal_strength,
+            position=self._last_position,
+            error=state.error,
+            metrics=state.metrics,
+        )
 
     def get_device_state(self) -> DeviceStateMessage | None:
         return self.data.get("state")
@@ -234,6 +330,9 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def get_device_info(self) -> Any | None:
         return self.data.get("device")
+
+    def get_device_location(self) -> dict[str, Any] | None:
+        return self.data.get("location")
 
     def get_device_meta(self) -> dict[str, Any]:
         return self.data.get("meta", {})
