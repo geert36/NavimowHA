@@ -47,6 +47,30 @@ def parse_location_payload(
             if "time" in item:
                 location["pose_time"] = item["time"]
             changed = True
+        elif payload_type == 2:
+            if "action" in item:
+                location["mow_action"] = item["action"]
+            if "currentMowBoundary" in item:
+                location["current_mow_boundary"] = item["currentMowBoundary"]
+            if "currentMowProgress" in item:
+                location["current_mow_progress"] = _coerce_number(
+                    item["currentMowProgress"]
+                )
+            if "mapWorkPosition" in item:
+                location["map_work_position"] = item["mapWorkPosition"]
+            if "mowStartType" in item:
+                location["mow_start_type"] = item["mowStartType"]
+            if "mowingPercentage" in item:
+                location["mowing_percentage"] = _coerce_number(
+                    item["mowingPercentage"]
+                )
+            if "mowingWeakArea" in item:
+                location["mowing_weak_area"] = _coerce_number(item["mowingWeakArea"])
+            if "subtotalArea" in item:
+                location["subtotal_area"] = _coerce_number(item["subtotalArea"])
+            if "time" in item:
+                location["mow_progress_time"] = item["time"]
+            changed = True
         elif payload_type == 3:
             partition_ids = item.get("partitionIds")
             location["partition_ids"] = partition_ids
@@ -73,3 +97,16 @@ def parse_location_payload(
 
     cache[device_id] = location
     return location
+
+
+def _coerce_number(value: Any) -> int | float | str | None:
+    """Convert numeric-looking values while preserving unknown payloads."""
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if number.is_integer():
+        return int(number)
+    return number
