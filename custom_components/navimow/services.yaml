@@ -1,6 +1,6 @@
 set_blade_height:
   name: Set blade height
-  description: Set the mower blade height (currently not supported via REST API; this service will error).
+  description: Set the mower blade height through the Navimow realtime connection.
   fields:
     device_id:
       name: Device ID
