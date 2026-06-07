@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Final
 
 DOMAIN: Final = "navimow"
+CONF_ZONE_NAMES: Final = "zone_names_json"
+DEFAULT_ZONE_NAMES: Final = "{}"
 
 # OAuth2 Configuration
 # 授权页面 URL（用户登录页面）
