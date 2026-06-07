@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_entry_oauth2_flow
+import voluptuous as vol
 
 from .auth import NavimowOAuth2Implementation
 from .const import (
@@ -18,6 +19,8 @@ from .const import (
     MQTT_PORT,
     MQTT_USERNAME,
     MQTT_PASSWORD,
+    CONF_ZONE_NAMES,
+    DEFAULT_ZONE_NAMES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,7 +52,6 @@ class NavimowOAuth2FlowHandler(
         implementation = NavimowOAuth2Implementation(
             self.hass, DOMAIN, CLIENT_ID, CLIENT_SECRET
         )
-        # Ensure HA has the implementation registered before redirect/callback.
         config_entry_oauth2_flow.async_register_implementation(
             self.hass, DOMAIN, implementation
         )
@@ -61,11 +63,9 @@ class NavimowOAuth2FlowHandler(
     ) -> FlowResult:
         """Handle a flow initiated by the user."""
         _LOGGER.debug("Starting OAuth2 flow: source=%s", self.source)
-        # 检查是否已经配置
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
 
-        # 检查必要的配置
         if not CLIENT_ID or not CLIENT_SECRET:
             _LOGGER.error(
                 "Missing OAuth2 client configuration: client_id_set=%s, client_secret_set=%s",
@@ -79,10 +79,8 @@ class NavimowOAuth2FlowHandler(
                 },
             )
 
-        # Ensure implementation is registered before authorize step.
         _LOGGER.debug("Registering OAuth2 implementation before authorize step")
         _ = self.oauth2_implementation
-        # 仅一个 OAuth2 实现，直接进入授权步骤
         _LOGGER.debug("Proceeding to OAuth2 authorize step")
         return await super().async_step_user()
 
@@ -91,7 +89,6 @@ class NavimowOAuth2FlowHandler(
     ) -> FlowResult:
         """Ensure implementation exists before redirect."""
         _LOGGER.debug("Entering oauth2_authorize step")
-        # Force register implementation in case HA missed it.
         _ = self.oauth2_implementation
         return await super().async_step_oauth2_authorize(user_input)
 
@@ -111,31 +108,27 @@ class NavimowOAuth2FlowHandler(
                 data_schema=None,
             )
 
-        # 仅一个 OAuth2 实现，直接进入授权步骤
         return await super().async_step_user()
 
     async def async_oauth_create_entry(self, data: dict[str, Any]) -> FlowResult:
         """Create an entry for the flow, or update existing entry for reauth."""
-        # HA 已经自动处理了 token 交换，data["token"] 已包含 token 信息
-        # 如果是 reauth，HA 会自动更新 entry
         if self.source == config_entries.SOURCE_REAUTH:
             existing_entry = self.entry
             self.hass.config_entries.async_update_entry(
                 existing_entry,
                 data={
                     **existing_entry.data,
-                    **data,  # 包含新的 token
+                    **data,
                 },
             )
             await self.hass.config_entries.async_reload(existing_entry.entry_id)
             return self.async_abort(reason="reauth_successful")
 
-        # 保存配置和 token（HA 已自动处理 token 交换）
         return self.async_create_entry(
             title="Navimow",
             data={
                 "auth_implementation": DOMAIN,
-                **data,  # 包含 token（由 HA 自动处理）
+                **data,
                 "api_base_url": API_BASE_URL,
                 "mqtt_broker": MQTT_BROKER,
                 "mqtt_port": MQTT_PORT,
@@ -169,5 +162,14 @@ class NavimowOptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=None,
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_ZONE_NAMES,
+                        default=self._config_entry.options.get(
+                            CONF_ZONE_NAMES, DEFAULT_ZONE_NAMES
+                        ),
+                    ): str,
+                }
+            ),
         )

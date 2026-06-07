@@ -1,9 +1,11 @@
 """DataUpdateCoordinator for Navimow integration."""
+import json
 import logging
 import time
 from datetime import timedelta
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import config_entry_oauth2_flow
@@ -20,6 +22,8 @@ from mower_sdk.models import (
 from mower_sdk.sdk import NavimowSDK
 
 from .const import (
+    CONF_ZONE_NAMES,
+    DEFAULT_ZONE_NAMES,
     DOMAIN,
     HTTP_FALLBACK_MIN_INTERVAL,
     MQTT_STALE_SECONDS,
@@ -39,6 +43,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         sdk: NavimowSDK,
         api: MowerAPI,
         device: Device,
+        config_entry: ConfigEntry,
         oauth_session: config_entry_oauth2_flow.OAuth2Session | None = None,
     ) -> None:
         super().__init__(
@@ -50,6 +55,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.sdk = sdk
         self.api = api
         self.device = device
+        self.config_entry = config_entry
         self.oauth_session = oauth_session
         self.data: dict[str, Any] = {}
         self._last_state: DeviceStateMessage | None = None
@@ -318,6 +324,37 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             error=state.error,
             metrics=state.metrics,
         )
+
+    def _zone_names(self) -> dict[str, str]:
+        raw = self.config_entry.options.get(CONF_ZONE_NAMES, DEFAULT_ZONE_NAMES)
+        if not isinstance(raw, str) or not raw.strip():
+            return {}
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            return {}
+        if not isinstance(parsed, dict):
+            return {}
+        return {str(key): str(value) for key, value in parsed.items()}
+
+    def get_zone_label(self) -> str | None:
+        location = self.get_device_location()
+        if not location:
+            return None
+        partition = location.get("partition")
+        if partition is None:
+            return None
+        return self._zone_names().get(str(partition), f"Zone {partition}")
+
+    def get_vehicle_state_label(self) -> str | None:
+        location = self.get_device_location()
+        if not location or location.get("vehicle_state") is None:
+            return None
+        raw_value = location.get("vehicle_state")
+        state = self.get_device_state()
+        if state and state.state:
+            return f"{state.state} ({raw_value})"
+        return f"state_{raw_value}"
 
     def get_device_state(self) -> DeviceStateMessage | None:
         return self.data.get("state")

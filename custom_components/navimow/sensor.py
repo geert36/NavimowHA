@@ -61,14 +61,17 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         ),
     ),
     NavimowSensorEntityDescription(
+        key="vehicle_state",
+        name="Vehicle state",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: coordinator.get_vehicle_state_label(),
+    ),
+    NavimowSensorEntityDescription(
         key="zone",
         name="Zone",
         icon="mdi:map-marker",
-        value_fn=lambda coordinator: (
-            location.get("partition")
-            if (location := coordinator.get_device_location())
-            else None
-        ),
+        value_fn=lambda coordinator: coordinator.get_zone_label(),
+        attributes_fn=lambda coordinator: _build_zone_attributes(coordinator),
     ),
     NavimowSensorEntityDescription(
         key="position_x",
@@ -108,15 +111,22 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         value_fn=lambda coordinator: (
             state.state
             if (state := coordinator.get_device_state())
-            else (
-                location.get("vehicle_state")
-                if (location := coordinator.get_device_location())
-                else None
-            )
+            else coordinator.get_vehicle_state_label()
         ),
         attributes_fn=lambda coordinator: _build_telemetry_attributes(coordinator),
     ),
 )
+
+
+def _build_zone_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
+    """Return both the friendly zone label and raw partition ids."""
+    location = coordinator.get_device_location()
+    if not location:
+        return {}
+    return {
+        "partition": location.get("partition"),
+        "partition_ids": location.get("partition_ids"),
+    }
 
 
 def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
@@ -154,6 +164,8 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
         telemetry["attributes"] = attrs.attributes
     if location:
         telemetry["location"] = location
+        telemetry["zone_label"] = coordinator.get_zone_label()
+        telemetry["vehicle_state_label"] = coordinator.get_vehicle_state_label()
     if meta:
         telemetry["meta"] = meta
     return telemetry
