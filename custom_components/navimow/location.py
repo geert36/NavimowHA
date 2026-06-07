@@ -23,7 +23,12 @@ def parse_location_payload(
 
     location = dict(cache.get(device_id) or {})
     location["device_id"] = device_id
+    location["raw_payload"] = data
+    location["payload_types"] = [
+        item.get("type") for item in data if isinstance(item, dict) and "type" in item
+    ]
     changed = False
+    unknown_items: list[dict[str, Any]] = []
 
     for item in data:
         if not isinstance(item, dict):
@@ -54,6 +59,14 @@ def parse_location_payload(
         elif payload_type == 4:
             location["task_delay"] = item.get("taskDelay")
             changed = True
+        else:
+            unknown_items.append(item)
+            changed = True
+
+    if unknown_items:
+        location["unknown_items"] = unknown_items
+    else:
+        location.pop("unknown_items", None)
 
     if not changed:
         return None
