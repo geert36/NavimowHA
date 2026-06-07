@@ -13,6 +13,7 @@ from mower_sdk.api import MowerAPI
 from mower_sdk.models import (
     Device,
     DeviceAttributesMessage,
+    DeviceEventMessage,
     DeviceStateMessage,
     DeviceStatus,
 )
@@ -52,6 +53,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.data: dict[str, Any] = {}
         self._last_state: DeviceStateMessage | None = None
         self._last_attributes: DeviceAttributesMessage | None = None
+        self._last_event: DeviceEventMessage | None = None
         self._last_mqtt_update: float | None = None
         self._last_http_fetch: float | None = None
         self._last_data_source: str | None = None
@@ -59,6 +61,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def async_setup(self) -> None:
         """Register callbacks from SDK."""
         self.sdk.on_state(self._handle_state)
+        self.sdk.on_event(self._handle_event)
         self.sdk.on_attributes(self._handle_attributes)
 
     def _build_data(self) -> dict[str, Any]:
@@ -66,6 +69,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "device": self.device,
             "state": self._last_state,
             "attributes": self._last_attributes,
+            "event": self._last_event,
             "meta": {
                 "last_data_source": self._last_data_source,
                 "last_mqtt_update_monotonic": self._last_mqtt_update,
@@ -104,11 +108,8 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 token = self.oauth_session.token
         except ConfigEntryAuthFailed:
-            # 确定性认证失败（refresh_token 缺失或被服务端拒绝）→ 直接上报，让 HA 引导用户重新认证
             raise
         except Exception as err:
-            # 瞬态错误（网络超时、DNS 等）→ 不立即触发重新认证流程。
-            # 尝试沿用缓存中的 access_token；若缓存也不可用才升级为认证失败。
             _LOGGER.warning(
                 "Token refresh failed (likely transient), falling back to cached token: %s", err
             )
@@ -126,9 +127,6 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return access_token
 
     async def _async_update_data(self) -> dict[str, Any]:
-        # 每次 update 都主动刷新 token，确保 api._token 与 oauth_session 保持同步。
-        # 若仅在 HTTP fallback 时刷新，MQTT 正常推数据期间 token 长期不更新，
-        # 过期后用户下发指令会立即收到 CODE_OAUTH_INFO_ILLEGAL。
         try:
             await self._async_ensure_valid_token()
         except ConfigEntryAuthFailed:
@@ -188,6 +186,19 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_data_source = "mqtt_push"
         self.hass.loop.call_soon_threadsafe(self._update_from_state, state)
 
+    def _handle_event(self, event: DeviceEventMessage) -> None:
+        if event.device_id != self.device.id:
+            return
+        _LOGGER.debug(
+            "MQTT event received: device=%s type=%s event=%s",
+            event.device_id,
+            event.type,
+            event.event,
+        )
+        self._last_mqtt_update = time.monotonic()
+        self._last_data_source = "mqtt_push"
+        self.hass.loop.call_soon_threadsafe(self._update_from_event, event)
+
     def _handle_attributes(self, attrs: DeviceAttributesMessage) -> None:
         if attrs.device_id != self.device.id:
             return
@@ -204,6 +215,10 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_data_source = "mqtt_push"
         self.async_set_updated_data(self._build_data())
 
+    def _update_from_event(self, event: DeviceEventMessage) -> None:
+        self._last_event = event
+        self.async_set_updated_data(self._build_data())
+
     def _update_from_attributes(self, attrs: DeviceAttributesMessage) -> None:
         self._last_attributes = attrs
         self.async_set_updated_data(self._build_data())
@@ -211,8 +226,14 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def get_device_state(self) -> DeviceStateMessage | None:
         return self.data.get("state")
 
+    def get_device_event(self) -> DeviceEventMessage | None:
+        return self.data.get("event")
+
     def get_device_attributes(self) -> DeviceAttributesMessage | None:
         return self.data.get("attributes")
 
     def get_device_info(self) -> Any | None:
         return self.data.get("device")
+
+    def get_device_meta(self) -> dict[str, Any]:
+        return self.data.get("meta", {})
