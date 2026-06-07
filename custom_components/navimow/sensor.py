@@ -75,7 +75,9 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
 def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
     """Expose raw MQTT-derived data for troubleshooting and feature discovery."""
     state = coordinator.get_device_state()
+    event = coordinator.get_device_event()
     attrs = coordinator.get_device_attributes()
+    meta = coordinator.get_device_meta()
 
     telemetry: dict[str, Any] = {}
     if state:
@@ -91,8 +93,19 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
             telemetry["error"] = state.error
         if state.metrics:
             telemetry["metrics"] = state.metrics
+    if event:
+        telemetry["event"] = {
+            "timestamp": event.timestamp,
+            "type": event.type,
+            "event": event.event,
+            "level": event.level,
+            "message": event.message,
+            "params": event.params,
+        }
     if attrs and attrs.attributes:
         telemetry["attributes"] = attrs.attributes
+    if meta:
+        telemetry["meta"] = meta
     return telemetry
 
 
