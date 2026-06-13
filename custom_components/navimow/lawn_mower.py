@@ -117,6 +117,8 @@ class NavimowLawnMower(CoordinatorEntity[NavimowCoordinator], LawnMowerEntity):
         attributes: dict[str, Any] = {
             "battery": state.battery,
             "status": state.state,
+            "operating_mode": self.coordinator.get_operating_mode(),
+            "is_mapping": self.coordinator.is_mapping_mode(),
         }
         if state.signal_strength is not None:
             attributes["signal_strength"] = state.signal_strength
