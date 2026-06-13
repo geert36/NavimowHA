@@ -67,6 +67,12 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         value_fn=lambda coordinator: coordinator.get_vehicle_state_label(),
     ),
     NavimowSensorEntityDescription(
+        key="operating_mode",
+        name="Operating mode",
+        value_fn=lambda coordinator: coordinator.get_operating_mode(),
+        attributes_fn=lambda coordinator: _build_operating_mode_attributes(coordinator),
+    ),
+    NavimowSensorEntityDescription(
         key="zone",
         name="Zone",
         icon="mdi:map-marker",
@@ -78,10 +84,8 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         name="Mowing percentage",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda coordinator: (
-            location.get("mowing_percentage")
-            if (location := coordinator.get_device_location())
-            else None
+        value_fn=lambda coordinator: _active_mowing_location_value(
+            coordinator, "mowing_percentage"
         ),
         attributes_fn=lambda coordinator: _build_mowing_progress_attributes(coordinator),
     ),
@@ -90,10 +94,8 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         name="Subtotal area",
         native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda coordinator: (
-            location.get("subtotal_area")
-            if (location := coordinator.get_device_location())
-            else None
+        value_fn=lambda coordinator: _active_mowing_location_value(
+            coordinator, "subtotal_area"
         ),
     ),
     NavimowSensorEntityDescription(
@@ -101,19 +103,15 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         name="Mowing week area",
         native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda coordinator: (
-            location.get("mowing_week_area")
-            if (location := coordinator.get_device_location())
-            else None
+        value_fn=lambda coordinator: _active_mowing_location_value(
+            coordinator, "mowing_week_area"
         ),
     ),
     NavimowSensorEntityDescription(
         key="mow_start_type",
         name="Mow start type",
-        value_fn=lambda coordinator: (
-            location.get("mow_start_type")
-            if (location := coordinator.get_device_location())
-            else None
+        value_fn=lambda coordinator: _active_mowing_location_value(
+            coordinator, "mow_start_type"
         ),
         attributes_fn=lambda coordinator: _build_mow_start_type_attributes(coordinator),
     ),
@@ -162,6 +160,18 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
 )
 
 
+def _active_mowing_location_value(
+    coordinator: NavimowCoordinator, key: str
+) -> Any | None:
+    """Return mowing-only location values, hiding them during mapping."""
+    if coordinator.is_mapping_mode():
+        return None
+    location = coordinator.get_device_location()
+    if not location:
+        return None
+    return location.get(key)
+
+
 def _build_zone_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
     """Return both the friendly zone label and raw partition ids."""
     location = coordinator.get_device_location()
@@ -173,10 +183,24 @@ def _build_zone_attributes(coordinator: NavimowCoordinator) -> dict[str, Any]:
     }
 
 
+def _build_operating_mode_attributes(
+    coordinator: NavimowCoordinator,
+) -> dict[str, Any]:
+    """Return both the raw SDK state and the generic HA-facing state."""
+    state = coordinator.get_device_state()
+    return {
+        "raw_state": coordinator.get_raw_state(),
+        "entity_state": state.state if state else None,
+        "is_mapping": coordinator.is_mapping_mode(),
+    }
+
+
 def _build_mowing_progress_attributes(
     coordinator: NavimowCoordinator,
 ) -> dict[str, Any]:
     """Return raw mowing-progress fields from the realtime payload."""
+    if coordinator.is_mapping_mode():
+        return {}
     location = coordinator.get_device_location()
     if not location:
         return {}
@@ -196,6 +220,8 @@ def _build_mow_start_type_attributes(
     coordinator: NavimowCoordinator,
 ) -> dict[str, Any]:
     """Return a readable hint for the mow start type code."""
+    if coordinator.is_mapping_mode():
+        return {}
     location = coordinator.get_device_location()
     if not location:
         return {}
@@ -229,6 +255,7 @@ def _build_telemetry_attributes(coordinator: NavimowCoordinator) -> dict[str, An
     if state:
         telemetry["timestamp"] = state.timestamp
         telemetry["status"] = state.state
+        telemetry["operating_mode"] = coordinator.get_operating_mode()
         if state.battery is not None:
             telemetry["battery"] = state.battery
         if state.signal_strength is not None:
