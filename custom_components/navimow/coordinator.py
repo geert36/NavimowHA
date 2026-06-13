@@ -396,6 +396,25 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return f"{state.state} ({raw_value})"
         return f"state_{raw_value}"
 
+    def get_raw_state(self) -> str | None:
+        state = self.get_device_state()
+        if not state or not state.metrics or not isinstance(state.metrics, dict):
+            return None
+        raw_state = state.metrics.get("raw_state")
+        if raw_state is None:
+            return None
+        return str(raw_state)
+
+    def get_operating_mode(self) -> str | None:
+        raw_state = self.get_raw_state()
+        if raw_state:
+            return raw_state
+        state = self.get_device_state()
+        return state.state if state else None
+
+    def is_mapping_mode(self) -> bool:
+        return self.get_raw_state() == "isMapping"
+
     def get_device_state(self) -> DeviceStateMessage | None:
         return self.data.get("state")
 
