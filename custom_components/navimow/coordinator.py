@@ -34,6 +34,11 @@ from .position import position_dict
 
 _LOGGER = logging.getLogger(__name__)
 
+_VEHICLE_STATE_LABELS: dict[int, str] = {
+    4: "mowing",
+    5: "returning_to_dock",
+}
+
 
 class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator for Navimow data updates."""
@@ -391,6 +396,19 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not location or location.get("vehicle_state") is None:
             return None
         raw_value = location.get("vehicle_state")
+        if isinstance(raw_value, bool):
+            raw_int = int(raw_value)
+        elif isinstance(raw_value, int):
+            raw_int = raw_value
+        else:
+            try:
+                raw_int = int(raw_value)
+            except (TypeError, ValueError):
+                raw_int = None
+
+        if raw_int is not None and raw_int in _VEHICLE_STATE_LABELS:
+            return f"{_VEHICLE_STATE_LABELS[raw_int]} ({raw_int})"
+
         state = self.get_device_state()
         if state and state.state:
             return f"{state.state} ({raw_value})"
