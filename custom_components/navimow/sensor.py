@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfArea
+from homeassistant.const import PERCENTAGE, UnitOfArea, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -57,6 +57,42 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         value_fn=lambda coordinator: (
             state.error.get("code")
             if (state := coordinator.get_device_state()) and state.error
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="error_message",
+        name="Error message",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: (
+            state.error.get("message")
+            if (state := coordinator.get_device_state()) and state.error
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="mowing_time",
+        name="Mowing time (current session)",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: (
+            state.metrics.get("mowing_time")
+            if (state := coordinator.get_device_state()) and state.metrics
+            else None
+        ),
+    ),
+    NavimowSensorEntityDescription(
+        key="total_mowing_time",
+        name="Total mowing time",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: (
+            state.metrics.get("total_mowing_time")
+            if (state := coordinator.get_device_state()) and state.metrics
             else None
         ),
     ),

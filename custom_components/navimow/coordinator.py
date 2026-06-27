@@ -122,6 +122,11 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "code": status.error_code.value,
                 "message": status.error_message,
             }
+        metrics: dict[str, Any] = {}
+        if status.mowing_time is not None:
+            metrics["mowing_time"] = status.mowing_time
+        if status.total_mowing_time is not None:
+            metrics["total_mowing_time"] = status.total_mowing_time
         return DeviceStateMessage(
             device_id=status.device_id,
             timestamp=status.timestamp,
@@ -130,7 +135,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             signal_strength=status.signal_strength,
             position=status.position,
             error=error,
-            metrics=None,
+            metrics=metrics or None,
         )
 
     async def _async_ensure_valid_token(self) -> str | None:
