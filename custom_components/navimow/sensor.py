@@ -271,6 +271,7 @@ def _build_mow_start_type_attributes(
 def _mow_start_type_label(value: Any) -> str | None:
     """Map known mow start type codes to readable labels."""
     mapping = {
+        0: "scheduled",
         1: "manual",
     }
     return mapping.get(value)
