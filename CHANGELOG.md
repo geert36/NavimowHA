@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.4.1...NavimowHA-v1.5.0) (2026-10-09)
+
+
+### Features
+
+* **sensor:** make sensor names translatable and add Dutch ([a0aad76](https://github.com/geert36/NavimowHA/commit/a0aad760b415a268633c3929377b029c57daa5bb))
+
 ## [1.4.1](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.4.0...NavimowHA-v1.4.1) (2026-10-09)
 
 
