@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.4.0...NavimowHA-v1.4.1) (2026-10-09)
+
+
+### Features
+
+* **sensor:** map operating_mode to readable labels ([a72aa82](https://github.com/geert36/NavimowHA/commit/a72aa82b09073ecd206e2c75f184c6b0531e6d39))
+
+
+### Miscellaneous Chores
+
+* release 1.4.1 ([d986b94](https://github.com/geert36/NavimowHA/commit/d986b94c80c66cd9b5883c8f02a693770787f4c2))
+
 ## [1.4.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.3.0...NavimowHA-v1.4.0) (2026-10-09)
 
 
