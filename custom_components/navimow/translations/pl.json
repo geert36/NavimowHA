@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "oauth2_authorize": {
+        "description": "Kliknij „Potwierdź”, aby zezwolić Home Assistant na dostęp do Twojego konta Navimow.\n\nZostaniesz przekierowany na stronę logowania Navimow w celu dokończenia uwierzytelniania."
+      },
+      "user": {
+        "title": "Konfiguracja integracji Navimow",
+        "description": "Skonfiguruj integrację robota koszącego Navimow."
+      },
+      "reauth_confirm": {
+        "title": "Wymagane ponowne uwierzytelnienie",
+        "description": "Sesja uwierzytelniania Navimow wygasła. Przeprowadź ponowne uwierzytelnienie, aby kontynuować korzystanie z integracji."
+      }
+    },
+    "error": {
+      "authorization_failed": "Autoryzacja nie powiodła się. Spróbuj ponownie.",
+      "token_exchange_failed": "Nie udało się wymienić kodu autoryzacji na token.",
+      "callback_failed": "Nie udało się przetworzyć wywołania zwrotnego OAuth2.",
+      "cannot_connect": "Nie można nawiązać połączenia z usługą Navimow.",
+      "invalid_auth": "Nieprawidłowe uwierzytelnienie. Sprawdź swoją konfigurację.",
+      "unknown": "Nieoczekiwany błąd.",
+      "missing_config": "Brak konfiguracji. Skonfiguruj CLIENT_ID oraz CLIENT_SECRET w pliku const.py."
+    },
+    "abort": {
+      "single_instance_allowed": "Już skonfigurowano. Możliwa jest tylko jedna konfiguracja.",
+      "already_configured": "Konto jest już skonfigurowane.",
+      "reauth_successful": "Ponowne uwierzytelnienie powiodło się."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje Navimow",
+        "description": "Skonfiguruj opcje integracji Navimow."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Bateria"
+      }
+    }
+  }
+}

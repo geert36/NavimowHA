@@ -192,6 +192,9 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._last_raw_attributes_message = _serialize_debug_value(cached_attrs)
 
         now = time.monotonic()
+        # Use state-specific freshness here. Attributes packets can still arrive
+        # while mower activity/state is stale, which would otherwise suppress
+        # the HTTP fallback and leave Home Assistant showing old status.
         is_state_stale = (
             self._last_mqtt_state_update is None
             or now - self._last_mqtt_state_update > MQTT_STALE_SECONDS
@@ -214,6 +217,8 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self._last_raw_state_message = _serialize_debug_value(fallback_state)
                 self._last_http_fetch = now
                 self._last_data_source = "http_fallback"
+                # Push immediately so entities update without waiting for the
+                # next coordinator tick.
                 self.data = self._build_data()
                 self.async_set_updated_data(self.data)
             except ConfigEntryAuthFailed:

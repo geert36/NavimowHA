@@ -37,10 +37,10 @@ MQTT_PASSWORD: Final | None = None
 UPDATE_INTERVAL: Final = 30
 
 # MQTT 超时时间（秒），超过该时间未收到状态消息则走 HTTP 兜底。
-# Reduced to detect silent MQTT outages and missing state pushes sooner.
+# Reduced to detect silent MQTT outages (no state pushes from server) sooner.
 MQTT_STALE_SECONDS: Final = 90
 
-# MQTT Keepalive（秒），更快发现半开连接。
+# MQTT Keepalive (seconds). PINGREQ interval for faster half-open TCP detection.
 MQTT_KEEPALIVE_SECONDS: Final = 120
 
 # HTTP 兜底最小拉取间隔（秒）。
