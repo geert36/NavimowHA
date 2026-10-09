@@ -40,6 +40,54 @@
     "sensor": {
       "battery": {
         "name": "Accu"
+      },
+      "signal_strength": {
+        "name": "Signaalsterkte"
+      },
+      "error_code": {
+        "name": "Foutcode"
+      },
+      "error_message": {
+        "name": "Foutmelding"
+      },
+      "mowing_time": {
+        "name": "Maaitijd (huidige sessie)"
+      },
+      "total_mowing_time": {
+        "name": "Totale maaitijd"
+      },
+      "vehicle_state": {
+        "name": "Voertuigstatus"
+      },
+      "operating_mode": {
+        "name": "Bedrijfsmodus"
+      },
+      "zone": {
+        "name": "Zone"
+      },
+      "mowing_percentage": {
+        "name": "Maaipercentage"
+      },
+      "subtotal_area": {
+        "name": "Subtotaal oppervlakte"
+      },
+      "mowing_week_area": {
+        "name": "Gemaaide oppervlakte deze week"
+      },
+      "mow_start_type": {
+        "name": "Type maaistart"
+      },
+      "position_x": {
+        "name": "Positie X"
+      },
+      "position_y": {
+        "name": "Positie Y"
+      },
+      "heading": {
+        "name": "Koers"
+      },
+      "telemetry": {
+        "name": "Telemetrie"
       }
     }
   }
