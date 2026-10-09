@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
-    SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
@@ -28,6 +28,12 @@ class NavimowSensorEntityDescription(SensorEntityDescription):
 
     value_fn: Callable[[NavimowCoordinator], Any]
     attributes_fn: Callable[[NavimowCoordinator], dict[str, Any]] | None = None
+    # Mowing-session fields only arrive in type-2 location payloads, i.e. while
+    # the mower is actually mowing. When it is docked/idle (or after a restart)
+    # those fields are absent, so these sensors would otherwise read "unknown".
+    # Flagged sensors keep their last known value instead, restored across
+    # restarts via RestoreSensor.
+    restore_last_value: bool = False
 
 
 SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
@@ -120,6 +126,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         name="Mowing percentage",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+        restore_last_value=True,
         value_fn=lambda coordinator: _active_mowing_location_value(
             coordinator, "mowing_percentage"
         ),
@@ -130,6 +137,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         name="Subtotal area",
         native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
         state_class=SensorStateClass.MEASUREMENT,
+        restore_last_value=True,
         value_fn=lambda coordinator: _active_mowing_location_value(
             coordinator, "subtotal_area"
         ),
@@ -139,6 +147,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
         name="Mowing week area",
         native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
         state_class=SensorStateClass.MEASUREMENT,
+        restore_last_value=True,
         value_fn=lambda coordinator: _active_mowing_location_value(
             coordinator, "mowing_week_area"
         ),
@@ -146,6 +155,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     NavimowSensorEntityDescription(
         key="mow_start_type",
         name="Mow start type",
+        restore_last_value=True,
         value_fn=lambda coordinator: _active_mowing_location_value(
             coordinator, "mow_start_type"
         ),
@@ -346,7 +356,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class NavimowSensor(CoordinatorEntity[NavimowCoordinator], SensorEntity):
+class NavimowSensor(CoordinatorEntity[NavimowCoordinator], RestoreSensor):
     """Representation of a Navimow sensor."""
 
     entity_description: NavimowSensorEntityDescription
@@ -359,6 +369,7 @@ class NavimowSensor(CoordinatorEntity[NavimowCoordinator], SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = entity_description
+        self._restored_value: Any = None
 
         device = coordinator.device
         self._attr_unique_id = f"{DOMAIN}_{device.id}_{entity_description.key}"
@@ -371,6 +382,14 @@ class NavimowSensor(CoordinatorEntity[NavimowCoordinator], SensorEntity):
             serial_number=device.serial_number or device.id,
         )
 
+    async def async_added_to_hass(self) -> None:
+        """Restore the last known value for mowing-session sensors."""
+        await super().async_added_to_hass()
+        if self.entity_description.restore_last_value and self._restored_value is None:
+            last_data = await self.async_get_last_sensor_data()
+            if last_data is not None and last_data.native_value is not None:
+                self._restored_value = last_data.native_value
+
     @property
     def available(self) -> bool:
         if self.coordinator.get_device_state() is not None:
@@ -381,8 +400,19 @@ class NavimowSensor(CoordinatorEntity[NavimowCoordinator], SensorEntity):
 
     @property
     def native_value(self) -> Any:
-        """Return sensor value from coordinator."""
-        return self.entity_description.value_fn(self.coordinator)
+        """Return sensor value from coordinator.
+
+        Mowing-session sensors keep their last known value: type-2 location
+        payloads only arrive while mowing, so when the live value is absent
+        (docked/idle, or just after a restart) fall back to the retained value
+        instead of reporting "unknown".
+        """
+        value = self.entity_description.value_fn(self.coordinator)
+        if not self.entity_description.restore_last_value:
+            return value
+        if value is not None:
+            self._restored_value = value
+        return self._restored_value
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
