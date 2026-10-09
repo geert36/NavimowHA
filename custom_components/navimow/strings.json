@@ -37,5 +37,60 @@
     "data_description": {
       "zone_names_json": "Map partition ids to friendly names, for example {\"5\": \"Voortuin\", \"6\": \"Achtertuin\"}."
     }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      },
+      "signal_strength": {
+        "name": "Signal strength"
+      },
+      "error_code": {
+        "name": "Error code"
+      },
+      "error_message": {
+        "name": "Error message"
+      },
+      "mowing_time": {
+        "name": "Mowing time (current session)"
+      },
+      "total_mowing_time": {
+        "name": "Total mowing time"
+      },
+      "vehicle_state": {
+        "name": "Vehicle state"
+      },
+      "operating_mode": {
+        "name": "Operating mode"
+      },
+      "zone": {
+        "name": "Zone"
+      },
+      "mowing_percentage": {
+        "name": "Mowing percentage"
+      },
+      "subtotal_area": {
+        "name": "Subtotal area"
+      },
+      "mowing_week_area": {
+        "name": "Mowing week area"
+      },
+      "mow_start_type": {
+        "name": "Mow start type"
+      },
+      "position_x": {
+        "name": "Position X"
+      },
+      "position_y": {
+        "name": "Position Y"
+      },
+      "heading": {
+        "name": "Heading"
+      },
+      "telemetry": {
+        "name": "Telemetry"
+      }
+    }
   }
 }

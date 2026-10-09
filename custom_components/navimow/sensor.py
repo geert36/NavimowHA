@@ -49,7 +49,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="signal_strength",
-        name="Signal strength",
+        translation_key="signal_strength",
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda coordinator: (
@@ -58,7 +58,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="error_code",
-        name="Error code",
+        translation_key="error_code",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda coordinator: (
             state.error.get("code")
@@ -68,7 +68,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="error_message",
-        name="Error message",
+        translation_key="error_message",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda coordinator: (
             state.error.get("message")
@@ -78,7 +78,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="mowing_time",
-        name="Mowing time (current session)",
+        translation_key="mowing_time",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.SECONDS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -91,7 +91,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="total_mowing_time",
-        name="Total mowing time",
+        translation_key="total_mowing_time",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.SECONDS,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -104,26 +104,26 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="vehicle_state",
-        name="Vehicle state",
+        translation_key="vehicle_state",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda coordinator: coordinator.get_vehicle_state_label(),
     ),
     NavimowSensorEntityDescription(
         key="operating_mode",
-        name="Operating mode",
+        translation_key="operating_mode",
         value_fn=lambda coordinator: coordinator.get_operating_mode(),
         attributes_fn=lambda coordinator: _build_operating_mode_attributes(coordinator),
     ),
     NavimowSensorEntityDescription(
         key="zone",
-        name="Zone",
+        translation_key="zone",
         icon="mdi:map-marker",
         value_fn=lambda coordinator: coordinator.get_zone_label(),
         attributes_fn=lambda coordinator: _build_zone_attributes(coordinator),
     ),
     NavimowSensorEntityDescription(
         key="mowing_percentage",
-        name="Mowing percentage",
+        translation_key="mowing_percentage",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         restore_last_value=True,
@@ -134,7 +134,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="subtotal_area",
-        name="Subtotal area",
+        translation_key="subtotal_area",
         native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
         state_class=SensorStateClass.MEASUREMENT,
         restore_last_value=True,
@@ -144,7 +144,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="mowing_week_area",
-        name="Mowing week area",
+        translation_key="mowing_week_area",
         native_unit_of_measurement=UnitOfArea.SQUARE_METERS,
         state_class=SensorStateClass.MEASUREMENT,
         restore_last_value=True,
@@ -154,7 +154,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="mow_start_type",
-        name="Mow start type",
+        translation_key="mow_start_type",
         restore_last_value=True,
         value_fn=lambda coordinator: _active_mowing_location_value(
             coordinator, "mow_start_type"
@@ -163,7 +163,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="position_x",
-        name="Position X",
+        translation_key="position_x",
         native_unit_of_measurement="m",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda coordinator: (
@@ -172,7 +172,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="position_y",
-        name="Position Y",
+        translation_key="position_y",
         native_unit_of_measurement="m",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda coordinator: (
@@ -181,7 +181,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="heading",
-        name="Heading",
+        translation_key="heading",
         native_unit_of_measurement="°",
         icon="mdi:compass",
         value_fn=lambda coordinator: (
@@ -193,7 +193,7 @@ SENSOR_DESCRIPTIONS: tuple[NavimowSensorEntityDescription, ...] = (
     ),
     NavimowSensorEntityDescription(
         key="telemetry",
-        name="Telemetry",
+        translation_key="telemetry",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:radio-tower",
         value_fn=lambda coordinator: (
