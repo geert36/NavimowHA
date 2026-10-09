@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.3.0...NavimowHA-v1.4.0) (2026-10-09)
+
+
+### Features
+
+* **sensor:** retain last value for mowing-session sensors ([3eb9eff](https://github.com/geert36/NavimowHA/commit/3eb9eff966c3ad1768b3a767e3d58d0abfe4279c))
+
 ## [1.3.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.2.8...NavimowHA-v1.3.0) (2026-10-09)
 
 
