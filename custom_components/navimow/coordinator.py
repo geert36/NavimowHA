@@ -34,9 +34,18 @@ from .position import position_dict
 
 _LOGGER = logging.getLogger(__name__)
 
+# vehicleState codes from the /realtimeDate/location channel (type 1 payloads).
+# Catalogued empirically over a 156 h device trace; see the raouldekezel/NavimowHA
+# diagnostic notes (docs/diag/2026-05-23_map-01_vehiclestate-catalog). Codes 3 and
+# 8 cover several firmware sub-cases, so their labels are intentionally broad.
 _VEHICLE_STATE_LABELS: dict[int, str] = {
+    1: "docked",  # docked, battery full, not charging
+    2: "charging",  # docked, actively charging
+    3: "idle",  # catch-all: off-dock pause, transient dock flip, base unpowered
     4: "mowing",
     5: "returning_to_dock",
+    6: "mapping",  # post-mow map consolidation (isMapping)
+    8: "transient",  # uncatalogued; likely a firmware reset / power-on transient
 }
 
 
