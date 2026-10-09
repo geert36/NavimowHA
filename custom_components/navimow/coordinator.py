@@ -48,6 +48,30 @@ _VEHICLE_STATE_LABELS: dict[int, str] = {
     8: "transient",  # uncatalogued; likely a firmware reset / power-on transient
 }
 
+# Raw firmware state strings (from the /state channel's raw_state) mapped to
+# readable operating-mode labels. The firmware emits camelCase values, including
+# the typo "isIdel". Unknown values fall through unchanged so new firmware
+# states still surface. The canonical lawn_mower activity collapses mapping into
+# "mowing"; this keeps the finer distinction.
+_OPERATING_MODE_LABELS: dict[str, str] = {
+    "isDocked": "docked",
+    "isIdel": "idle",  # firmware typo, emitted instead of isIdle
+    "isIdle": "idle",
+    "isRunning": "mowing",
+    "isMapping": "mapping",
+    "isPaused": "paused",
+    "isDocking": "returning",
+    "isCharging": "charging",
+    "isLifted": "lifted",
+    "inSoftwareUpdate": "updating",
+    "Self-Checking": "self_check",
+    "Self-checking": "self_check",
+    "Offline": "offline",
+    "offline": "offline",
+    "Error": "error",
+    "error": "error",
+}
+
 
 class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator for Navimow data updates."""
@@ -445,7 +469,7 @@ class NavimowCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def get_operating_mode(self) -> str | None:
         raw_state = self.get_raw_state()
         if raw_state:
-            return raw_state
+            return _OPERATING_MODE_LABELS.get(raw_state, raw_state)
         state = self.get_device_state()
         return state.state if state else None
 
