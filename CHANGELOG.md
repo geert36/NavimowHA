@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.2.8...NavimowHA-v1.3.0) (2026-10-09)
+
+
+### Features
+
+* **sensor:** expand vehicleState label catalog ([7290667](https://github.com/geert36/NavimowHA/commit/72906674a9e9e048bbcd24526f827bb2570c2daf))
+
 ## [1.2.8](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.2.7...NavimowHA-v1.2.8) (2026-10-09)
 
 
