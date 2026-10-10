@@ -44,9 +44,33 @@
   "options": {
     "step": {
       "init": {
-        "title": "Navimow Options",
-        "description": "Configure Navimow integration options"
+        "title": "Navimow options",
+        "menu_options": {
+          "zones": "Zone names",
+          "pro_auth": "Navimow app login (extra sensors)"
+        }
+      },
+      "zones": {
+        "title": "Zone names",
+        "data": {
+          "zone_names_json": "Zone names (JSON, id:name)"
+        }
+      },
+      "pro_auth": {
+        "title": "Navimow app login",
+        "description": "Sign in with your Navimow app account to add blade/chassis service life (and later schedule/settings). Leave both fields empty to remove the app login.",
+        "data": {
+          "email": "App e-mail",
+          "password": "App password",
+          "region": "Region"
+        }
       }
+    },
+    "error": {
+      "pro_incomplete": "Enter both e-mail and password, or leave both empty to remove.",
+      "pro_invalid_auth": "Navimow app login failed: check your e-mail and password.",
+      "pro_cannot_connect": "Could not reach the Navimow app servers. Try again.",
+      "pro_unknown": "Unexpected error during Navimow app login."
     }
   },
   "entity": {

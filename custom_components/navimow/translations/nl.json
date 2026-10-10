@@ -45,8 +45,32 @@
     "step": {
       "init": {
         "title": "Navimow-opties",
-        "description": "Configureer de opties voor de Navimow-integratie"
+        "menu_options": {
+          "zones": "Zone-namen",
+          "pro_auth": "Navimow-app-login (extra sensoren)"
+        }
+      },
+      "zones": {
+        "title": "Zone-namen",
+        "data": {
+          "zone_names_json": "Zone-namen (JSON, id:naam)"
+        }
+      },
+      "pro_auth": {
+        "title": "Navimow-app-login",
+        "description": "Log in met je Navimow-app-account om bladen-/chassis-levensduur toe te voegen (en later schema/instellingen). Laat beide velden leeg om de app-login te verwijderen.",
+        "data": {
+          "email": "App-e-mail",
+          "password": "App-wachtwoord",
+          "region": "Regio"
+        }
       }
+    },
+    "error": {
+      "pro_incomplete": "Vul zowel e-mail als wachtwoord in, of laat beide leeg om te verwijderen.",
+      "pro_invalid_auth": "Navimow-app-login mislukt: controleer je e-mail en wachtwoord.",
+      "pro_cannot_connect": "Kon de Navimow-app-servers niet bereiken. Probeer opnieuw.",
+      "pro_unknown": "Onverwachte fout bij de Navimow-app-login."
     }
   },
   "entity": {

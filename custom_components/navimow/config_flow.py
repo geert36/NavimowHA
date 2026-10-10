@@ -237,12 +237,18 @@ class NavimowOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the options."""
+        """Options menu: zone names, or the optional app login."""
+        return self.async_show_menu(step_id="init", menu_options=["zones", "pro_auth"])
+
+    async def async_step_zones(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Edit the friendly zone names."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
-            step_id="init",
+            step_id="zones",
             data_schema=vol.Schema(
                 {
                     vol.Optional(
@@ -253,4 +259,91 @@ class NavimowOptionsFlowHandler(config_entries.OptionsFlow):
                     ): str,
                 }
             ),
+        )
+
+    async def async_step_pro_auth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Add, update or remove the optional Navimow app login.
+
+        Submitting both fields empty removes the app login (and its extra
+        sensors); otherwise the credentials are validated and the resulting
+        tokens stored, then the entry is reloaded so the sensors appear.
+        """
+        existing = dict(self._config_entry.data.get(PRO_API_DATA) or {})
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            email = (user_input.get(CONF_PRO_EMAIL) or "").strip()
+            password = user_input.get(CONF_PRO_PASSWORD) or ""
+            region_choice = user_input.get(CONF_PRO_REGION) or REGION_AUTO
+
+            if not email and not password:
+                # Remove the app login if one was configured.
+                if existing:
+                    new_data = {
+                        k: v
+                        for k, v in self._config_entry.data.items()
+                        if k != PRO_API_DATA
+                    }
+                    self.hass.config_entries.async_update_entry(
+                        self._config_entry, data=new_data
+                    )
+                    await self.hass.config_entries.async_reload(
+                        self._config_entry.entry_id
+                    )
+                return self.async_create_entry(
+                    title="", data=dict(self._config_entry.options)
+                )
+            if not email or not password:
+                errors["base"] = "pro_incomplete"
+            else:
+                region = None if region_choice == REGION_AUTO else region_choice
+                try:
+                    tokens: Tokens = await self.hass.async_add_executor_job(
+                        passport.login, email, password, region
+                    )
+                except PassportAuthError:
+                    errors["base"] = "pro_invalid_auth"
+                except PassportError:
+                    errors["base"] = "pro_cannot_connect"
+                except Exception:  # noqa: BLE001
+                    _LOGGER.exception("Unexpected error during private-cloud login")
+                    errors["base"] = "pro_unknown"
+                else:
+                    pro = {
+                        CONF_PRO_EMAIL: email,
+                        "access_token": tokens.access_token,
+                        "refresh_token": tokens.refresh_token,
+                        "uuid": tokens.uuid,
+                        CONF_PRO_REGION: tokens.region or "",
+                        "device_id": existing.get("device_id") or uuid.uuid4().hex,
+                    }
+                    self.hass.config_entries.async_update_entry(
+                        self._config_entry,
+                        data={**self._config_entry.data, PRO_API_DATA: pro},
+                    )
+                    await self.hass.config_entries.async_reload(
+                        self._config_entry.entry_id
+                    )
+                    return self.async_create_entry(
+                        title="", data=dict(self._config_entry.options)
+                    )
+
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_PRO_EMAIL, default=existing.get(CONF_PRO_EMAIL, "")
+                ): str,
+                vol.Optional(CONF_PRO_PASSWORD, default=""): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
+                vol.Optional(
+                    CONF_PRO_REGION,
+                    default=existing.get(CONF_PRO_REGION) or REGION_AUTO,
+                ): vol.In([REGION_AUTO, *REGIONS]),
+            }
+        )
+        return self.async_show_form(
+            step_id="pro_auth", data_schema=schema, errors=errors
         )

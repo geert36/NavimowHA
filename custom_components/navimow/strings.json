@@ -40,15 +40,33 @@
   "options": {
     "step": {
       "init": {
-        "title": "Navimow 选项",
-        "description": "配置 Navimow 集成选项"
+        "title": "Navimow options",
+        "menu_options": {
+          "zones": "Zone names",
+          "pro_auth": "Navimow app login (extra sensors)"
+        }
+      },
+      "zones": {
+        "title": "Zone names",
+        "data": {
+          "zone_names_json": "Zone names (JSON, id:name)"
+        }
+      },
+      "pro_auth": {
+        "title": "Navimow app login",
+        "description": "Sign in with your Navimow app account to add blade/chassis service life (and later schedule/settings). Leave both fields empty to remove the app login.",
+        "data": {
+          "email": "App e-mail",
+          "password": "App password",
+          "region": "Region"
+        }
       }
     },
-    "data": {
-      "zone_names_json": "Zone names JSON"
-    },
-    "data_description": {
-      "zone_names_json": "Map partition ids to friendly names, for example {\"5\": \"Voortuin\", \"6\": \"Achtertuin\"}."
+    "error": {
+      "pro_incomplete": "Enter both e-mail and password, or leave both empty to remove.",
+      "pro_invalid_auth": "Navimow app login failed: check your e-mail and password.",
+      "pro_cannot_connect": "Could not reach the Navimow app servers. Try again.",
+      "pro_unknown": "Unexpected error during Navimow app login."
     }
   },
   "entity": {
