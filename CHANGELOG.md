@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.5.0...NavimowHA-v1.6.0) (2026-10-10)
+
+
+### Features
+
+* **config_flow:** add/update app login via Options (reconfigure) ([027dcc8](https://github.com/geert36/NavimowHA/commit/027dcc88e5ef4272f2b41445978bdb231fb1b80a))
+* **config_flow:** optional private-cloud app login step ([144aeea](https://github.com/geert36/NavimowHA/commit/144aeea4616122c19166b31f2ffe95a8ba8f0040))
+* **sensor:** add Wi-Fi signal and settings sensors via private cloud ([a95f081](https://github.com/geert36/NavimowHA/commit/a95f0815a8d6501671449cb670c110656577e6f9))
+* **sensor:** blade and chassis service-life sensors via private cloud ([837c088](https://github.com/geert36/NavimowHA/commit/837c088fbdecb24f6fa90044f99afafd2f0bb804))
+
 ## [1.5.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.4.1...NavimowHA-v1.5.0) (2026-10-09)
 
 
