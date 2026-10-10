@@ -1,12 +1,18 @@
 """Config flow for Navimow integration."""
 from __future__ import annotations
 import logging
+import uuid
 from typing import Any
 
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_entry_oauth2_flow
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 import voluptuous as vol
 
 from .auth import NavimowOAuth2Implementation
@@ -21,7 +27,13 @@ from .const import (
     MQTT_PASSWORD,
     CONF_ZONE_NAMES,
     DEFAULT_ZONE_NAMES,
+    CONF_PRO_EMAIL,
+    CONF_PRO_PASSWORD,
+    CONF_PRO_REGION,
+    PRO_API_DATA,
 )
+from .pro_api import PassportAuthError, PassportError, Tokens, passport
+from .pro_api._const import REGION_AUTO, REGIONS
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.debug("Navimow config_flow module imported")
@@ -34,6 +46,10 @@ class NavimowOAuth2FlowHandler(
 
     DOMAIN = DOMAIN
     VERSION = 1
+
+    # Stashed OAuth token data between the OAuth step and the optional
+    # private-cloud (pro) login step.
+    _oauth_data: dict[str, Any] | None = None
 
     @property
     def logger(self) -> logging.Logger:
@@ -111,7 +127,7 @@ class NavimowOAuth2FlowHandler(
         return await super().async_step_user()
 
     async def async_oauth_create_entry(self, data: dict[str, Any]) -> FlowResult:
-        """Create an entry for the flow, or update existing entry for reauth."""
+        """Finish OAuth, then offer the optional private-cloud login step."""
         if self.source == config_entries.SOURCE_REAUTH:
             existing_entry = self.entry
             self.hass.config_entries.async_update_entry(
@@ -124,17 +140,82 @@ class NavimowOAuth2FlowHandler(
             await self.hass.config_entries.async_reload(existing_entry.entry_id)
             return self.async_abort(reason="reauth_successful")
 
-        return self.async_create_entry(
-            title="Navimow",
-            data={
-                "auth_implementation": DOMAIN,
-                **data,
-                "api_base_url": API_BASE_URL,
-                "mqtt_broker": MQTT_BROKER,
-                "mqtt_port": MQTT_PORT,
-                "mqtt_username": MQTT_USERNAME,
-                "mqtt_password": MQTT_PASSWORD,
-            },
+        # Hold the OAuth result and move on to the optional app-login step for
+        # the extra private-cloud sensors.
+        self._oauth_data = data
+        return await self.async_step_pro_auth()
+
+    def _create_entry(self, pro: dict[str, Any] | None) -> FlowResult:
+        """Build the config entry from the OAuth data plus optional pro tokens."""
+        entry_data: dict[str, Any] = {
+            "auth_implementation": DOMAIN,
+            **(self._oauth_data or {}),
+            "api_base_url": API_BASE_URL,
+            "mqtt_broker": MQTT_BROKER,
+            "mqtt_port": MQTT_PORT,
+            "mqtt_username": MQTT_USERNAME,
+            "mqtt_password": MQTT_PASSWORD,
+        }
+        if pro:
+            entry_data[PRO_API_DATA] = pro
+        return self.async_create_entry(title="Navimow", data=entry_data)
+
+    async def async_step_pro_auth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Optional second login to the Navimow app's private cloud.
+
+        Leaving both fields empty skips it; the integration then runs on the
+        official OAuth API only (no blade/schedule/settings sensors).
+        """
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            email = (user_input.get(CONF_PRO_EMAIL) or "").strip()
+            password = user_input.get(CONF_PRO_PASSWORD) or ""
+            region_choice = user_input.get(CONF_PRO_REGION) or REGION_AUTO
+
+            if not email and not password:
+                return self._create_entry(None)  # skipped
+            if not email or not password:
+                errors["base"] = "pro_incomplete"
+            else:
+                region = None if region_choice == REGION_AUTO else region_choice
+                try:
+                    tokens: Tokens = await self.hass.async_add_executor_job(
+                        passport.login, email, password, region
+                    )
+                except PassportAuthError:
+                    errors["base"] = "pro_invalid_auth"
+                except PassportError:
+                    errors["base"] = "pro_cannot_connect"
+                except Exception:  # noqa: BLE001
+                    _LOGGER.exception("Unexpected error during private-cloud login")
+                    errors["base"] = "pro_unknown"
+                else:
+                    return self._create_entry(
+                        {
+                            CONF_PRO_EMAIL: email,
+                            "access_token": tokens.access_token,
+                            "refresh_token": tokens.refresh_token,
+                            "uuid": tokens.uuid,
+                            CONF_PRO_REGION: tokens.region or "",
+                            "device_id": uuid.uuid4().hex,
+                        }
+                    )
+
+        schema = vol.Schema(
+            {
+                vol.Optional(CONF_PRO_EMAIL, default=""): str,
+                vol.Optional(CONF_PRO_PASSWORD, default=""): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
+                vol.Optional(CONF_PRO_REGION, default=REGION_AUTO): vol.In(
+                    [REGION_AUTO, *REGIONS]
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="pro_auth", data_schema=schema, errors=errors
         )
 
     @staticmethod

@@ -11,6 +11,15 @@
       "reauth_confirm": {
         "title": "Her-authenticatie Vereist",
         "description": "Uw Navimow-authenticatie is verlopen. Voer opnieuw authenticatie uit om de integratie te blijven gebruiken."
+      },
+      "pro_auth": {
+        "title": "Navimow-app-login (optioneel)",
+        "description": "Log optioneel in met je Navimow-app-account om extra sensoren toe te voegen (bladen- en chassis-levensduur, schema, instellingen) die de officiële verbinding niet levert. Laat beide velden leeg om over te slaan.",
+        "data": {
+          "email": "App-e-mail",
+          "password": "App-wachtwoord",
+          "region": "Regio"
+        }
       }
     },
     "error": {
@@ -20,7 +29,11 @@
       "cannot_connect": "Kan geen verbinding maken met de Navimow-service.",
       "invalid_auth": "Authenticatie mislukt. Controleer uw configuratie.",
       "unknown": "Er is een onbekende fout opgetreden.",
-      "missing_config": "Ontbrekende configuratie. Configureer CLIENT_ID en CLIENT_SECRET in const.py."
+      "missing_config": "Ontbrekende configuratie. Configureer CLIENT_ID en CLIENT_SECRET in const.py.",
+      "pro_incomplete": "Vul zowel e-mail als wachtwoord in, of laat beide leeg om over te slaan.",
+      "pro_invalid_auth": "Navimow-app-login mislukt: controleer je e-mail en wachtwoord.",
+      "pro_cannot_connect": "Kon de Navimow-app-servers niet bereiken. Probeer opnieuw.",
+      "pro_unknown": "Onverwachte fout bij de Navimow-app-login."
     },
     "abort": {
       "single_instance_allowed": "Er is slechts één Navimow-instantie toegestaan.",

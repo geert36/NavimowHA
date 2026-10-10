@@ -11,6 +11,15 @@
       "reauth_confirm": {
         "title": "Re-authentication Required",
         "description": "Your Navimow authentication has expired. Please re-authenticate to continue using the integration."
+      },
+      "pro_auth": {
+        "title": "Navimow app login (optional)",
+        "description": "Optionally sign in with your Navimow app account to add extra sensors (blade and chassis service life, schedule, settings) that the official connection does not provide. Leave both fields empty to skip.",
+        "data": {
+          "email": "App e-mail",
+          "password": "App password",
+          "region": "Region"
+        }
       }
     },
     "error": {
@@ -20,7 +29,11 @@
       "cannot_connect": "Unable to connect to Navimow service.",
       "invalid_auth": "Authentication failed. Please check your configuration.",
       "unknown": "An unknown error occurred.",
-      "missing_config": "Missing configuration. Please configure CLIENT_ID and CLIENT_SECRET in const.py."
+      "missing_config": "Missing configuration. Please configure CLIENT_ID and CLIENT_SECRET in const.py.",
+      "pro_incomplete": "Enter both e-mail and password, or leave both empty to skip.",
+      "pro_invalid_auth": "Navimow app login failed: check your e-mail and password.",
+      "pro_cannot_connect": "Could not reach the Navimow app servers. Try again.",
+      "pro_unknown": "Unexpected error during Navimow app login."
     },
     "abort": {
       "single_instance_allowed": "Only one Navimow instance is allowed.",

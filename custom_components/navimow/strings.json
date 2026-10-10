@@ -7,6 +7,15 @@
       "user": {
         "title": "Navimow 集成配置",
         "description": "配置 Navimow 割草机集成"
+      },
+      "pro_auth": {
+        "title": "Navimow app login (optional)",
+        "description": "Optionally sign in with your Navimow app account to add extra sensors (blade and chassis service life, schedule, settings) that the official connection does not provide. Leave both fields empty to skip.",
+        "data": {
+          "email": "App e-mail",
+          "password": "App password",
+          "region": "Region"
+        }
       }
     },
     "error": {
@@ -15,7 +24,11 @@
       "callback_failed": "回调处理失败",
       "cannot_connect": "无法连接到 Navimow 服务",
       "invalid_auth": "认证失败，请检查配置",
-      "unknown": "发生未知错误"
+      "unknown": "发生未知错误",
+      "pro_incomplete": "Enter both e-mail and password, or leave both empty to skip.",
+      "pro_invalid_auth": "Navimow app login failed: check your e-mail and password.",
+      "pro_cannot_connect": "Could not reach the Navimow app servers. Try again.",
+      "pro_unknown": "Unexpected error during Navimow app login."
     },
     "abort": {
       "single_instance_allowed": "只能添加一个 Navimow 实例",
