@@ -8,6 +8,7 @@ from typing import Any, Callable
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
+    SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
@@ -20,6 +21,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import NavimowCoordinator
+from .pro_coordinator import NavimowProCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -343,7 +345,7 @@ async def async_setup_entry(
     devices = data["devices"]
     coordinators: dict[str, NavimowCoordinator] = data["coordinators"]
 
-    entities: list[NavimowSensor] = []
+    entities: list[SensorEntity] = []
     for device in devices:
         coordinator = coordinators[device.id]
         for description in SENSOR_DESCRIPTIONS:
@@ -353,6 +355,16 @@ async def async_setup_entry(
                     entity_description=description,
                 )
             )
+
+    # Optional private-cloud ("pro") sensors, only when the app login was set up.
+    pro_coordinator = data.get("pro_coordinator")
+    if pro_coordinator is not None:
+        for device in devices:
+            for pro_description in PRO_SENSOR_DESCRIPTIONS:
+                entities.append(
+                    NavimowProSensor(pro_coordinator, device, pro_description)
+                )
+
     async_add_entities(entities)
 
 
@@ -420,3 +432,88 @@ class NavimowSensor(CoordinatorEntity[NavimowCoordinator], RestoreSensor):
         if self.entity_description.attributes_fn is None:
             return {}
         return self.entity_description.attributes_fn(self.coordinator)
+
+
+@dataclass(frozen=True, kw_only=True)
+class NavimowProSensorEntityDescription(SensorEntityDescription):
+    """Describes a sensor fed by the optional private-cloud coordinator."""
+
+    value_fn: Callable[[dict[str, Any]], Any]
+    attributes_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+
+
+def _life_attrs(maintenance: dict[str, Any], component: str) -> dict[str, Any]:
+    """Raw reminder interval / runtime behind a blade or chassis life percentage."""
+    out: dict[str, Any] = {}
+    set_hours = maintenance.get(f"{component}_set_hours")
+    used_min = maintenance.get(f"{component}_used_min")
+    if set_hours is not None:
+        out["reminder_interval_hours"] = set_hours
+    if used_min is not None:
+        out["runtime_minutes"] = used_min
+    return out
+
+
+PRO_SENSOR_DESCRIPTIONS: tuple[NavimowProSensorEntityDescription, ...] = (
+    NavimowProSensorEntityDescription(
+        key="blades_life",
+        translation_key="blades_life",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:fan",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m: m.get("blades_pct"),
+        attributes_fn=lambda m: _life_attrs(m, "blades"),
+    ),
+    NavimowProSensorEntityDescription(
+        key="chassis_life",
+        translation_key="chassis_life",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:robot-mower",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda m: m.get("chassis_pct"),
+        attributes_fn=lambda m: _life_attrs(m, "chassis"),
+    ),
+)
+
+
+class NavimowProSensor(CoordinatorEntity[NavimowProCoordinator], SensorEntity):
+    """A sensor fed by the optional private-cloud ('pro') coordinator."""
+
+    entity_description: NavimowProSensorEntityDescription
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: NavimowProCoordinator,
+        device: Any,
+        entity_description: NavimowProSensorEntityDescription,
+    ) -> None:
+        super().__init__(coordinator)
+        self.entity_description = entity_description
+        self._serial = device.id
+        self._attr_unique_id = f"{DOMAIN}_{device.id}_{entity_description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device.id)},
+            name=device.name,
+            manufacturer="Navimow",
+            model=device.model or "Unknown",
+            sw_version=device.firmware_version or None,
+            serial_number=device.serial_number or device.id,
+        )
+
+    @property
+    def native_value(self) -> Any:
+        """Return the value from the pro coordinator's maintenance data."""
+        return self.entity_description.value_fn(
+            self.coordinator.maintenance_for(self._serial)
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self.entity_description.attributes_fn is None:
+            return {}
+        return self.entity_description.attributes_fn(
+            self.coordinator.maintenance_for(self._serial)
+        )

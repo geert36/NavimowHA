@@ -101,6 +101,12 @@
       },
       "telemetry": {
         "name": "Telemetrie"
+      },
+      "blades_life": {
+        "name": "Bladen-levensduur"
+      },
+      "chassis_life": {
+        "name": "Chassis-levensduur"
       }
     }
   }

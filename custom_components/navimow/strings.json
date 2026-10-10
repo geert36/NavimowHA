@@ -103,6 +103,12 @@
       },
       "telemetry": {
         "name": "Telemetry"
+      },
+      "blades_life": {
+        "name": "Blades life"
+      },
+      "chassis_life": {
+        "name": "Chassis life"
       }
     }
   }
