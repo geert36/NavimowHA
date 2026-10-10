@@ -85,6 +85,100 @@ def _parse_maintenance(maintenance: Any) -> dict[str, Any]:
     return result
 
 
+def _as_bool(value: Any) -> bool | None:
+    """Interpret the mower's many truthy encodings ('01', 1, '1', True)."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in ("1", "01", "true", "on", "yes"):
+        return True
+    if text in ("0", "00", "false", "off", "no", ""):
+        return False
+    return None
+
+
+def _find(obj: Any, *keys: str) -> Any:
+    """Recursively return the first value found for any of ``keys`` (DFS)."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k in keys:
+                return v
+        for v in obj.values():
+            found = _find(v, *keys)
+            if found is not None:
+                return found
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            found = _find(item, *keys)
+            if found is not None:
+                return found
+    return None
+
+
+def _parse_connectivity(index2: Any, auth: Any) -> dict[str, Any]:
+    """Signal levels from index2 (falling back to the auth-list entry)."""
+    index2 = index2 if isinstance(index2, dict) else {}
+    auth = auth if isinstance(auth, dict) else {}
+
+    def pick(*names: str) -> int | None:
+        for src in (index2, auth):
+            for name in names:
+                if name in src:
+                    v = _as_int(src.get(name))
+                    if v is not None:
+                        return v
+        return None
+
+    return {
+        "signal": pick("network_signal"),
+        "signal_wifi": pick("network_signal_wifi"),
+        "signal_4g": pick("network_signal_4G"),
+        "network_type": pick("networkType"),
+    }
+
+
+# Read-only settings surfaced as attributes on the Settings sensor. Keys are the
+# two accepted spellings per field (camelCase and snake_case) as the set-list
+# response may use either. Mirrors ilguala/navimow_pro (MIT).
+_SETTING_BOOLS: dict[str, tuple[str, ...]] = {
+    "schedule_enabled": ("startPlan", "start_plan"),
+    "night_mow": ("mowingAtNight", "mowing_at_night", "nightMowSwitch"),
+    "rain_sensor": ("rainSensor", "rain_sensor"),
+    "rain_detection": ("rainDetectionSwitch", "rain_detection_switch"),
+    "child_lock": ("childLock", "child_lock"),
+    "lift_alarm": ("liftSwitch", "lift_switch"),
+    "frost_delay": ("frostSwitch", "frost_switch"),
+    "snow_delay": ("snowSwitch", "snow_switch"),
+    "storm_delay": ("stormSwitch", "storm_switch"),
+    "obstacle_avoid": ("cptSwitch", "cpt_switch"),
+}
+_SETTING_INTS: dict[str, tuple[str, ...]] = {
+    "mowing_cycle": ("mowingCycle", "mowing_cycle"),
+    "return_battery_level": ("returnBatteryLevel", "return_battery_level"),
+    "charging_limit": ("chargingLimit", "charging_limit"),
+}
+
+
+def _parse_settings(set_list: Any) -> dict[str, Any]:
+    """Extract a read-only subset of mower settings from the set-list payload."""
+    if not isinstance(set_list, dict):
+        return {}
+    out: dict[str, Any] = {}
+    for key, names in _SETTING_BOOLS.items():
+        value = _as_bool(_find(set_list, *names))
+        if value is not None:
+            out[key] = value
+    for key, names in _SETTING_INTS.items():
+        value = _as_int(_find(set_list, *names))
+        if value is not None:
+            out[key] = value
+    return out
+
+
 class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     """Polls the private-cloud API for extra per-device data, keyed by serial."""
 
@@ -139,12 +233,23 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             sn = str(vehicle.get("vehicle_sn") or "")
             if not sn:
                 continue
-            try:
-                maintenance = _parse_maintenance(self._client.maintenance(sn))
-            except NavimowError as err:
-                _LOGGER.debug("maintenance fetch failed for %s: %s", sn, err)
-                maintenance = _parse_maintenance(None)
-            data[sn] = {"maintenance": maintenance}
+
+            def read(call, *args):
+                """Call one endpoint, logging and swallowing per-endpoint errors."""
+                try:
+                    return call(*args)
+                except NavimowError as err:
+                    _LOGGER.debug("%s fetch failed for %s: %s", call.__name__, sn, err)
+                    return None
+
+            maintenance = _parse_maintenance(read(self._client.maintenance, sn))
+            connectivity = _parse_connectivity(read(self._client.index2, sn), vehicle)
+            settings = _parse_settings(read(self._client.set_list, sn))
+            data[sn] = {
+                "maintenance": maintenance,
+                "connectivity": connectivity,
+                "settings": settings,
+            }
         return data, self._client.session_state()
 
     def _ensure_session(self) -> None:
@@ -179,8 +284,19 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             data={**self.config_entry.data, PRO_API_DATA: updated},
         )
 
-    def maintenance_for(self, serial: str) -> dict[str, Any]:
-        """Parsed maintenance dict for a device serial (empty if unavailable)."""
+    def _section_for(self, serial: str, section: str) -> dict[str, Any]:
         if not self.data:
             return {}
-        return (self.data.get(serial) or {}).get("maintenance") or {}
+        return (self.data.get(serial) or {}).get(section) or {}
+
+    def maintenance_for(self, serial: str) -> dict[str, Any]:
+        """Parsed maintenance dict for a device serial (empty if unavailable)."""
+        return self._section_for(serial, "maintenance")
+
+    def connectivity_for(self, serial: str) -> dict[str, Any]:
+        """Signal levels for a device serial (empty if unavailable)."""
+        return self._section_for(serial, "connectivity")
+
+    def settings_for(self, serial: str) -> dict[str, Any]:
+        """Read-only settings for a device serial (empty if unavailable)."""
+        return self._section_for(serial, "settings")

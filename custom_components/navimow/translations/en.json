@@ -131,6 +131,12 @@
       },
       "chassis_life": {
         "name": "Chassis life"
+      },
+      "wifi_signal": {
+        "name": "Wi-Fi signal"
+      },
+      "settings": {
+        "name": "Settings"
       }
     }
   }

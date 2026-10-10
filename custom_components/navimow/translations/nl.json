@@ -131,6 +131,12 @@
       },
       "chassis_life": {
         "name": "Chassis-levensduur"
+      },
+      "wifi_signal": {
+        "name": "Wifi-signaal"
+      },
+      "settings": {
+        "name": "Instellingen"
       }
     }
   }

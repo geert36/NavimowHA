@@ -440,6 +440,9 @@ class NavimowProSensorEntityDescription(SensorEntityDescription):
 
     value_fn: Callable[[dict[str, Any]], Any]
     attributes_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+    # Which section of the pro coordinator's per-device data to read:
+    # "maintenance", "connectivity" or "settings".
+    source: str = "maintenance"
 
 
 def _life_attrs(maintenance: dict[str, Any], component: str) -> dict[str, Any]:
@@ -475,6 +478,35 @@ PRO_SENSOR_DESCRIPTIONS: tuple[NavimowProSensorEntityDescription, ...] = (
         value_fn=lambda m: m.get("chassis_pct"),
         attributes_fn=lambda m: _life_attrs(m, "chassis"),
     ),
+    NavimowProSensorEntityDescription(
+        key="wifi_signal",
+        translation_key="wifi_signal",
+        source="connectivity",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:wifi",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda c: c.get("signal_wifi"),
+        attributes_fn=lambda c: {
+            k: c[k]
+            for k in ("signal", "signal_4g", "network_type")
+            if c.get(k) is not None
+        },
+    ),
+    NavimowProSensorEntityDescription(
+        key="settings",
+        translation_key="settings",
+        source="settings",
+        icon="mdi:cog",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        # State summarises the master schedule toggle; the full read-only
+        # settings live in the attributes.
+        value_fn=lambda s: (
+            None
+            if not s or s.get("schedule_enabled") is None
+            else ("scheduled" if s.get("schedule_enabled") else "manual")
+        ),
+        attributes_fn=lambda s: dict(s),
+    ),
 )
 
 
@@ -503,17 +535,18 @@ class NavimowProSensor(CoordinatorEntity[NavimowProCoordinator], SensorEntity):
             serial_number=device.serial_number or device.id,
         )
 
+    def _section(self) -> dict[str, Any]:
+        return self.coordinator._section_for(
+            self._serial, self.entity_description.source
+        )
+
     @property
     def native_value(self) -> Any:
-        """Return the value from the pro coordinator's maintenance data."""
-        return self.entity_description.value_fn(
-            self.coordinator.maintenance_for(self._serial)
-        )
+        """Return the value from the relevant section of the pro data."""
+        return self.entity_description.value_fn(self._section())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         if self.entity_description.attributes_fn is None:
             return {}
-        return self.entity_description.attributes_fn(
-            self.coordinator.maintenance_for(self._serial)
-        )
+        return self.entity_description.attributes_fn(self._section())
