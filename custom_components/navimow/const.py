@@ -6,6 +6,18 @@ DOMAIN: Final = "navimow"
 CONF_ZONE_NAMES: Final = "zone_names_json"
 DEFAULT_ZONE_NAMES: Final = "{}"
 
+# Optional private-cloud ("pro") API second auth (app e-mail + password). Used
+# only to read extra device data (blade/chassis service life, schedule,
+# settings) that the official OAuth API does not expose. Stored under the
+# PRO_API_DATA key inside the config entry data; the password itself is never
+# persisted (only the resulting tokens are).
+CONF_PRO_EMAIL: Final = "email"
+CONF_PRO_PASSWORD: Final = "password"
+CONF_PRO_REGION: Final = "region"
+PRO_API_DATA: Final = "pro_api"
+# Private API has no push; poll its slow-changing data infrequently.
+PRO_UPDATE_INTERVAL: Final = 600
+
 # OAuth2 Configuration
 # 授权页面 URL（用户登录页面）
 # 添加 channel=homeassistant 以便 HA 跳转回登录页时携带渠道信息

@@ -23,6 +23,7 @@ from .const import (
     MQTT_USERNAME,
     MQTT_PASSWORD,
     MQTT_KEEPALIVE_SECONDS,
+    PRO_API_DATA,
 )
 from .location import location_topic, parse_location_payload, position_topic
 from .services import async_setup_services
@@ -425,6 +426,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if device.id in _location_cache:
                 coordinator.ingest_location(_location_cache[device.id])
 
+        # Optional private-cloud ("pro") coordinator for extra sensors
+        # (blade/chassis service life, ...). Fully optional and non-fatal: if the
+        # app login is absent or the private API fails, the integration carries
+        # on with the OAuth/MQTT data only.
+        pro_coordinator = None
+        if entry.data.get(PRO_API_DATA):
+            from .pro_coordinator import NavimowProCoordinator
+
+            pro_coordinator = NavimowProCoordinator(hass, entry)
+            await pro_coordinator.async_refresh()
+            if not pro_coordinator.last_update_success:
+                _LOGGER.warning(
+                    "Navimow private-cloud data unavailable at setup; pro sensors "
+                    "will populate once it recovers"
+                )
+
         hass.data[DOMAIN][entry.entry_id] = {
             "sdk": sdk,
             "api": api,
@@ -432,6 +449,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "coordinators": coordinators,
             "oauth_session": oauth_session,
             "unload_flag": _unload_flag,
+            "pro_coordinator": pro_coordinator,
         }
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
