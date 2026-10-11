@@ -137,6 +137,32 @@
       },
       "settings": {
         "name": "Instellingen"
+      },
+      "return_battery_level": {
+        "name": "Terugkeer-accuniveau"
+      },
+      "charging_limit": {
+        "name": "Laadlimiet"
+      }
+    },
+    "binary_sensor": {
+      "schedule_enabled": {
+        "name": "Schema actief"
+      },
+      "night_mow": {
+        "name": "Nacht-maaien"
+      },
+      "rain_sensor": {
+        "name": "Regensensor"
+      },
+      "child_lock": {
+        "name": "Kinderslot"
+      },
+      "lift_alarm": {
+        "name": "Optakel-alarm"
+      },
+      "obstacle_avoid": {
+        "name": "Obstakel-ontwijking"
       }
     }
   }

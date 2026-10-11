@@ -133,6 +133,32 @@
       },
       "settings": {
         "name": "Settings"
+      },
+      "return_battery_level": {
+        "name": "Return battery level"
+      },
+      "charging_limit": {
+        "name": "Charging limit"
+      }
+    },
+    "binary_sensor": {
+      "schedule_enabled": {
+        "name": "Schedule enabled"
+      },
+      "night_mow": {
+        "name": "Night mowing"
+      },
+      "rain_sensor": {
+        "name": "Rain sensor"
+      },
+      "child_lock": {
+        "name": "Child lock"
+      },
+      "lift_alarm": {
+        "name": "Lift alarm"
+      },
+      "obstacle_avoid": {
+        "name": "Obstacle avoidance"
       }
     }
   }
