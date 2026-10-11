@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.6.0...NavimowHA-v1.7.0) (2026-10-11)
+
+
+### Features
+
+* expose mower settings as binary sensors and number sensors ([0c0726c](https://github.com/geert36/NavimowHA/commit/0c0726c4bcfca4421ed5dbfc814c68cfa205210c))
+
 ## [1.6.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.5.0...NavimowHA-v1.6.0) (2026-10-10)
 
 
