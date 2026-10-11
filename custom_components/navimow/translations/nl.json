@@ -145,7 +145,7 @@
         "name": "Laadlimiet"
       }
     },
-    "binary_sensor": {
+    "switch": {
       "schedule_enabled": {
         "name": "Schema actief"
       },
@@ -161,7 +161,7 @@
       "lift_alarm": {
         "name": "Optakel-alarm"
       },
-      "obstacle_avoid": {
+      "obstacle_avoidance": {
         "name": "Obstakel-ontwijking"
       }
     }

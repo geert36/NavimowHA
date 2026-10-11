@@ -32,10 +32,10 @@ _LOGGER = logging.getLogger(__name__)
 _LOGGER.debug("Navimow module imported (__init__.py)")
 
 PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
     Platform.DEVICE_TRACKER,
     Platform.LAWN_MOWER,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 
