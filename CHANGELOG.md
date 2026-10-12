@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.9.0...NavimowHA-v1.9.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **navimow:** prevent stale MQTT cache from replacing newer state ([eb85d4d](https://github.com/geert36/NavimowHA/commit/eb85d4d2b034faa99931a41b63e3487485745834))
+
 ## [1.9.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.8.0...NavimowHA-v1.9.0) (2026-10-12)
 
 
