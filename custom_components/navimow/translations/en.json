@@ -145,7 +145,7 @@
         "name": "Charging limit"
       }
     },
-    "binary_sensor": {
+    "switch": {
       "schedule_enabled": {
         "name": "Schedule enabled"
       },
@@ -161,7 +161,7 @@
       "lift_alarm": {
         "name": "Lift alarm"
       },
-      "obstacle_avoid": {
+      "obstacle_avoidance": {
         "name": "Obstacle avoidance"
       }
     }

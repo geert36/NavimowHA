@@ -15,8 +15,10 @@ CONF_PRO_EMAIL: Final = "email"
 CONF_PRO_PASSWORD: Final = "password"
 CONF_PRO_REGION: Final = "region"
 PRO_API_DATA: Final = "pro_api"
-# Private API has no push; poll its slow-changing data infrequently.
-PRO_UPDATE_INTERVAL: Final = 600
+# Private API has no push; poll its slow-changing data at a modest pace so
+# changes made in the app show up within a few minutes without hammering the
+# vendor cloud.
+PRO_UPDATE_INTERVAL: Final = 300
 
 # OAuth2 Configuration
 # 授权页面 URL（用户登录页面）

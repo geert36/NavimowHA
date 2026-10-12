@@ -179,6 +179,22 @@ def _parse_settings(set_list: Any) -> dict[str, Any]:
     return out
 
 
+# Default used when the account/model does not report a vehicle_type; the iot
+# settings writes require one and the cloud accepts this generic fallback.
+_DEFAULT_VEHICLE_TYPE = 160000001
+
+
+def _vehicle_type(vehicle: Any, index2: Any) -> int:
+    """Model code needed for iot_set settings writes (auth-list, then index2)."""
+    vehicle = vehicle if isinstance(vehicle, dict) else {}
+    index2 = index2 if isinstance(index2, dict) else {}
+    return (
+        _as_int(vehicle.get("vehicle_type"))
+        or _as_int(index2.get("vehicle_type") or index2.get("vehicleType"))
+        or _DEFAULT_VEHICLE_TYPE
+    )
+
+
 class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     """Polls the private-cloud API for extra per-device data, keyed by serial."""
 
@@ -242,13 +258,15 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     _LOGGER.debug("%s fetch failed for %s: %s", call.__name__, sn, err)
                     return None
 
+            index2 = read(self._client.index2, sn)
             maintenance = _parse_maintenance(read(self._client.maintenance, sn))
-            connectivity = _parse_connectivity(read(self._client.index2, sn), vehicle)
+            connectivity = _parse_connectivity(index2, vehicle)
             settings = _parse_settings(read(self._client.set_list, sn))
             data[sn] = {
                 "maintenance": maintenance,
                 "connectivity": connectivity,
                 "settings": settings,
+                "vehicle_type": _vehicle_type(vehicle, index2),
             }
         return data, self._client.session_state()
 
@@ -284,6 +302,11 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             data={**self.config_entry.data, PRO_API_DATA: updated},
         )
 
+    @property
+    def client(self) -> NavimowCloudClient:
+        """The private-cloud client (used by control entities to write)."""
+        return self._client
+
     def _section_for(self, serial: str, section: str) -> dict[str, Any]:
         if not self.data:
             return {}
@@ -300,3 +323,20 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def settings_for(self, serial: str) -> dict[str, Any]:
         """Read-only settings for a device serial (empty if unavailable)."""
         return self._section_for(serial, "settings")
+
+    def vehicle_type_for(self, serial: str) -> int:
+        """Model code for a device serial (for iot settings writes)."""
+        if not self.data:
+            return _DEFAULT_VEHICLE_TYPE
+        return (self.data.get(serial) or {}).get(
+            "vehicle_type", _DEFAULT_VEHICLE_TYPE
+        )
+
+    async def async_send(self, func, *args: Any) -> Any:
+        """Run a blocking private-cloud write off the event loop.
+
+        Used by control entities (switches). Errors propagate to the caller so
+        the entity surfaces the failure; the caller refreshes afterwards to
+        re-read the authoritative state.
+        """
+        return await self.hass.async_add_executor_job(func, *args)
