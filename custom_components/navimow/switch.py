@@ -144,6 +144,9 @@ class NavimowSettingSwitch(
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._serial = device.id
+        # Shows the just-commanded value immediately after a write, until the
+        # next poll confirms it (the private API has no push).
+        self._optimistic: bool | None = None
         self._attr_unique_id = f"{DOMAIN}_{device.id}_{entity_description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, device.id)},
@@ -156,8 +159,15 @@ class NavimowSettingSwitch(
 
     @property
     def is_on(self) -> bool | None:
+        if self._optimistic is not None:
+            return self._optimistic
         settings = self.coordinator.settings_for(self._serial)
         return settings.get(self.entity_description.setting_key)
+
+    def _handle_coordinator_update(self) -> None:
+        # A fresh poll is authoritative: drop the optimistic value.
+        self._optimistic = None
+        super()._handle_coordinator_update()
 
     async def _write(self, on: bool) -> None:
         desc = self.entity_description
@@ -184,6 +194,9 @@ class NavimowSettingSwitch(
             await self.coordinator.async_send(
                 client.set_bool_setting, self._serial, desc.write_key, on
             )
+        # Show the new value at once; the refresh below confirms it.
+        self._optimistic = on
+        self.async_write_ha_state()
         await self.coordinator.async_request_refresh()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
