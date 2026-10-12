@@ -137,12 +137,6 @@
       },
       "settings": {
         "name": "Settings"
-      },
-      "return_battery_level": {
-        "name": "Return battery level"
-      },
-      "charging_limit": {
-        "name": "Charging limit"
       }
     },
     "switch": {
@@ -163,6 +157,35 @@
       },
       "obstacle_avoidance": {
         "name": "Obstacle avoidance"
+      },
+      "rain_detection": {
+        "name": "Rain detection"
+      },
+      "sound": {
+        "name": "Sound"
+      },
+      "power_saving": {
+        "name": "Power saving"
+      },
+      "frost_delay": {
+        "name": "Frost delay"
+      },
+      "snow_delay": {
+        "name": "Snow delay"
+      },
+      "storm_delay": {
+        "name": "Storm delay"
+      },
+      "high_temp_delay": {
+        "name": "High temperature delay"
+      }
+    },
+    "number": {
+      "return_battery_level": {
+        "name": "Return battery level"
+      },
+      "charging_limit": {
+        "name": "Charging limit"
       }
     }
   }

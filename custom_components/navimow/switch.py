@@ -101,6 +101,75 @@ SWITCHES: tuple[NavimowSwitchEntityDescription, ...] = (
         iot=True,
         numeric=True,  # cloud number 1/0
     ),
+    NavimowSwitchEntityDescription(
+        key="rain_detection",
+        translation_key="rain_detection",
+        icon="mdi:weather-pouring",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="rain_detection",
+        write_key="rainDetectionSwitch",
+        iot=False,  # legacy: plain set_bool_setting
+    ),
+    NavimowSwitchEntityDescription(
+        key="sound",
+        translation_key="sound",
+        icon="mdi:volume-high",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="sound",
+        write_key="soundSwitch",
+        iot=True,
+        numeric=False,  # cloud string "1"/"0"
+    ),
+    NavimowSwitchEntityDescription(
+        key="power_saving",
+        translation_key="power_saving",
+        icon="mdi:leaf",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="power_saving",
+        write_key="lowPowerSet",
+        iot=True,
+        numeric=True,  # cloud number 1/0
+    ),
+    NavimowSwitchEntityDescription(
+        key="frost_delay",
+        translation_key="frost_delay",
+        icon="mdi:snowflake-alert",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="frost_delay",
+        write_key="frostSwitch",
+        iot=True,
+        numeric=True,  # cloud number 1/0
+    ),
+    NavimowSwitchEntityDescription(
+        key="snow_delay",
+        translation_key="snow_delay",
+        icon="mdi:snowflake",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="snow_delay",
+        write_key="snowSwitch",
+        iot=True,
+        numeric=True,  # cloud number 1/0
+    ),
+    NavimowSwitchEntityDescription(
+        key="storm_delay",
+        translation_key="storm_delay",
+        icon="mdi:weather-windy",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="storm_delay",
+        write_key="stormSwitch",
+        iot=True,
+        numeric=True,  # cloud number 1/0
+    ),
+    NavimowSwitchEntityDescription(
+        key="high_temp_delay",
+        translation_key="high_temp_delay",
+        icon="mdi:thermometer-high",
+        entity_category=EntityCategory.CONFIG,
+        setting_key="high_temp_delay",
+        write_key="highTempSwitch",
+        iot=True,
+        numeric=True,  # cloud number 1/0
+    ),
 )
 
 
