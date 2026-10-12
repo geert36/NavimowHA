@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.7.0...NavimowHA-v1.8.0) (2026-10-12)
+
+
+### Features
+
+* controllable mower settings as switches (private cloud) ([6d85fed](https://github.com/geert36/NavimowHA/commit/6d85fed10f96ace77c43f9e131b92247b9883eb6))
+* **switch:** optimistic state and faster pro polling ([af8d288](https://github.com/geert36/NavimowHA/commit/af8d288a33de6f9a543f1a00c69b8cd40680eb2a))
+
 ## [1.7.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.6.0...NavimowHA-v1.7.0) (2026-10-11)
 
 
