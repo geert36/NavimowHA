@@ -137,12 +137,6 @@
       },
       "settings": {
         "name": "Instellingen"
-      },
-      "return_battery_level": {
-        "name": "Terugkeer-accuniveau"
-      },
-      "charging_limit": {
-        "name": "Laadlimiet"
       }
     },
     "switch": {
@@ -163,6 +157,35 @@
       },
       "obstacle_avoidance": {
         "name": "Obstakel-ontwijking"
+      },
+      "rain_detection": {
+        "name": "Regendetectie"
+      },
+      "sound": {
+        "name": "Geluid"
+      },
+      "power_saving": {
+        "name": "Spaarstand"
+      },
+      "frost_delay": {
+        "name": "Vorst-vertraging"
+      },
+      "snow_delay": {
+        "name": "Sneeuw-vertraging"
+      },
+      "storm_delay": {
+        "name": "Storm-vertraging"
+      },
+      "high_temp_delay": {
+        "name": "Hoge-temperatuur-vertraging"
+      }
+    },
+    "number": {
+      "return_battery_level": {
+        "name": "Terugkeer-accuniveau"
+      },
+      "charging_limit": {
+        "name": "Laadlimiet"
       }
     }
   }

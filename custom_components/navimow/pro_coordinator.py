@@ -154,7 +154,10 @@ _SETTING_BOOLS: dict[str, tuple[str, ...]] = {
     "frost_delay": ("frostSwitch", "frost_switch"),
     "snow_delay": ("snowSwitch", "snow_switch"),
     "storm_delay": ("stormSwitch", "storm_switch"),
+    "high_temp_delay": ("highTempSwitch", "high_temp_switch"),
     "obstacle_avoid": ("cptSwitch", "cpt_switch"),
+    "sound": ("soundSwitch", "sound_switch"),
+    "power_saving": ("lowPowerSet", "low_power_set"),
 }
 _SETTING_INTS: dict[str, tuple[str, ...]] = {
     "mowing_cycle": ("mowingCycle", "mowing_cycle"),

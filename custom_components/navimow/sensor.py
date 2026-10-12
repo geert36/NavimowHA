@@ -507,24 +507,6 @@ PRO_SENSOR_DESCRIPTIONS: tuple[NavimowProSensorEntityDescription, ...] = (
         ),
         attributes_fn=lambda s: dict(s),
     ),
-    NavimowProSensorEntityDescription(
-        key="return_battery_level",
-        translation_key="return_battery_level",
-        source="settings",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:battery-charging-30",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("return_battery_level"),
-    ),
-    NavimowProSensorEntityDescription(
-        key="charging_limit",
-        translation_key="charging_limit",
-        source="settings",
-        native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:battery-charging-high",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("charging_limit"),
-    ),
 )
 
 
