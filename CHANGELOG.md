@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.8.0...NavimowHA-v1.9.0) (2026-10-12)
+
+
+### Features
+
+* more setting switches and battery-threshold number entities ([ce3496f](https://github.com/geert36/NavimowHA/commit/ce3496fb745ebd5b51b125161bd1cfb823747b3f))
+
 ## [1.8.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.7.0...NavimowHA-v1.8.0) (2026-10-12)
 
 
