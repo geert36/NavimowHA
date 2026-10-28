@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.9.1...NavimowHA-v1.9.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* **navimow:** populate firmware version from authList 'firmware' field ([e27998a](https://github.com/geert36/NavimowHA/commit/e27998ad677f6109339db647766091704a7a85f9))
+
 ## [1.9.1](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.9.0...NavimowHA-v1.9.1) (2026-10-12)
 
 
