@@ -126,6 +126,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not devices:
             _LOGGER.warning("No Navimow devices found")
 
+        # The SDK's Device.from_dict reads 'firmware_version', but authList
+        # actually sends the firmware under 'firmware' (upstream #97 /
+        # navimow-sdk #31), so device.firmware_version is empty and the device
+        # page shows no firmware. Re-read authList raw and fill it in, so
+        # sw_version is populated without waiting for an SDK release.
+        try:
+            _raw = await api._async_request("GET", "/openapi/smarthome/authList")
+            _raw_devices = (
+                (_raw.get("data") or {}).get("payload", {}).get("devices", [])
+                if isinstance(_raw, dict)
+                else []
+            )
+            _firmware_by_id = {
+                str(d.get("id")): d.get("firmware")
+                for d in _raw_devices
+                if isinstance(d, dict) and d.get("firmware")
+            }
+            for _device in devices:
+                if not getattr(_device, "firmware_version", None):
+                    _fw = _firmware_by_id.get(str(getattr(_device, "id", "")))
+                    if _fw:
+                        _device.firmware_version = _fw
+        except Exception as err:  # noqa: BLE001 - firmware is cosmetic, never fatal
+            _LOGGER.debug("Could not enrich firmware version from authList: %s", err)
+
         try:
             mqtt_info = await api.async_get_mqtt_user_info()
             # Cache credentials in entry.data so they survive transient API outages
