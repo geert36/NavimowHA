@@ -25,6 +25,7 @@ from .const import (
     MQTT_KEEPALIVE_SECONDS,
     PRO_API_DATA,
 )
+from .firmware import format_firmware
 from .location import location_topic, parse_location_payload, position_topic
 from .services import async_setup_services
 
@@ -37,6 +38,7 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.SENSOR,
     Platform.SWITCH,
+    Platform.UPDATE,
 ]
 
 
@@ -147,7 +149,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 if not getattr(_device, "firmware_version", None):
                     _fw = _firmware_by_id.get(str(getattr(_device, "id", "")))
                     if _fw:
-                        _device.firmware_version = _fw
+                        # 4-char wire code -> app notation: 0066 -> 1.0.6.6
+                        _device.firmware_version = format_firmware(_fw)
         except Exception as err:  # noqa: BLE001 - firmware is cosmetic, never fatal
             _LOGGER.debug("Could not enrich firmware version from authList: %s", err)
 

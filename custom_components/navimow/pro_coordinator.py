@@ -14,14 +14,17 @@ The maintenance parsing mirrors ilguala/navimow_pro (MIT); see pro_api/LICENSE.
 from __future__ import annotations
 
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import CONF_PRO_REGION, DOMAIN, PRO_API_DATA, PRO_UPDATE_INTERVAL
+from .firmware import parse_firmware
 from .pro_api import (
     NavimowAuthError,
     NavimowCloudClient,
@@ -31,6 +34,11 @@ from .pro_api import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Firmware changes only with an update, so it is read at startup and then twice
+# a day; after a failed read it is retried sooner.
+_FIRMWARE_REFRESH_S = 12 * 3600
+_FIRMWARE_RETRY_S = 1800
 
 
 def _as_float(value: Any) -> float | None:
@@ -223,6 +231,9 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             region=region,
             host=pro.get("host") or None,
         )
+        # Last good firmware read per serial, and when to read it again.
+        self._firmware: dict[str, dict[str, Any]] = {}
+        self._firmware_next: dict[str, float] = {}
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         try:
@@ -233,7 +244,27 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             raise UpdateFailed(f"Private-cloud update failed: {err}") from err
         # Persist refreshed tokens/uid on the event loop so they survive restarts.
         self._persist_session(session)
+        self._sync_sw_version(data)
         return data
+
+    def _sync_sw_version(self, data: dict[str, dict[str, Any]]) -> None:
+        """Show the ACU firmware (the app's main firmware) on the device page.
+
+        Kept in step after an over-the-air update, without a restart.
+        """
+        registry = dr.async_get(self.hass)
+        devices = dr.async_entries_for_config_entry(
+            registry, self.config_entry.entry_id
+        )
+        for serial, section in data.items():
+            acu = ((section.get("firmware") or {}).get("modules") or {}).get(
+                "firmware_acu"
+            )
+            if not acu:
+                continue
+            for device in devices:
+                if (DOMAIN, serial) in device.identifiers and device.sw_version != acu:
+                    registry.async_update_device(device.id, sw_version=acu)
 
     def _fetch_blocking(self) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
         """Runs in an executor thread: ensure session, then read per-vehicle data."""
@@ -265,11 +296,23 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             maintenance = _parse_maintenance(read(self._client.maintenance, sn))
             connectivity = _parse_connectivity(index2, vehicle)
             settings = _parse_settings(read(self._client.set_list, sn))
+            vehicle_type = _vehicle_type(vehicle, index2)
+            now = time.monotonic()
+            if now >= self._firmware_next.get(sn, 0.0):
+                parsed = parse_firmware(
+                    read(self._client.firmware_list, sn, vehicle_type)
+                )
+                if parsed:
+                    self._firmware[sn] = parsed
+                    self._firmware_next[sn] = now + _FIRMWARE_REFRESH_S
+                else:
+                    self._firmware_next[sn] = now + _FIRMWARE_RETRY_S
             data[sn] = {
                 "maintenance": maintenance,
                 "connectivity": connectivity,
                 "settings": settings,
-                "vehicle_type": _vehicle_type(vehicle, index2),
+                "firmware": self._firmware.get(sn, {}),
+                "vehicle_type": vehicle_type,
             }
         return data, self._client.session_state()
 
@@ -322,6 +365,10 @@ class NavimowProCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     def connectivity_for(self, serial: str) -> dict[str, Any]:
         """Signal levels for a device serial (empty if unavailable)."""
         return self._section_for(serial, "connectivity")
+
+    def firmware_for(self, serial: str) -> dict[str, Any]:
+        """Firmware module and OS versions for a serial (empty if unavailable)."""
+        return self._section_for(serial, "firmware")
 
     def settings_for(self, serial: str) -> dict[str, Any]:
         """Read-only settings for a device serial (empty if unavailable)."""

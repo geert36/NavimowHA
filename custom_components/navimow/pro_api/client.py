@@ -463,6 +463,19 @@ class NavimowCloudClient:
             "/vehicle/vehicle/get-component-maintenance", {"vehicle_sn": sn}
         ) or {}
 
+    def firmware_list(self, sn: str, vehicle_type: Any) -> Any:
+        """The version of each firmware module on the mower (read-only).
+
+        The endpoint behind the app's Software-update screen: ``firmwareList``
+        (``{type, version}`` per module) plus ``osInfo`` (current and newest
+        Navimow OS). Nothing here starts an update. Mirrors ilguala/navimow_pro
+        (MIT).
+        """
+        return self.call(
+            "/mowerbot/vehicle/firmware/get-firmware-list",
+            {"vehicle_sn": sn, "vehicle_type": vehicle_type},
+        )
+
     def map_list(self, sn: str) -> Any:
         return self.call("/map/index/map-list", {"vehicle_sn": sn})
 

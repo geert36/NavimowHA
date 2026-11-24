@@ -137,6 +137,24 @@
       },
       "settings": {
         "name": "Instellingen"
+      },
+      "navimow_os": {
+        "name": "Navimow OS"
+      },
+      "firmware_acu": {
+        "name": "ACU-firmware"
+      },
+      "firmware_ecu": {
+        "name": "ECU-firmware"
+      },
+      "firmware_vcu": {
+        "name": "Firmware voertuigbesturing"
+      },
+      "firmware_charging_station": {
+        "name": "Laadstation-firmware"
+      },
+      "firmware_vision_core": {
+        "name": "Firmware Vision core"
       }
     },
     "switch": {
@@ -186,6 +204,11 @@
       },
       "charging_limit": {
         "name": "Laadlimiet"
+      }
+    },
+    "update": {
+      "navimow_os": {
+        "name": "Navimow OS"
       }
     }
   }

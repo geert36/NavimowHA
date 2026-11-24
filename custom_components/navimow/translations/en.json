@@ -137,6 +137,24 @@
       },
       "settings": {
         "name": "Settings"
+      },
+      "navimow_os": {
+        "name": "Navimow OS"
+      },
+      "firmware_acu": {
+        "name": "ACU firmware"
+      },
+      "firmware_ecu": {
+        "name": "ECU firmware"
+      },
+      "firmware_vcu": {
+        "name": "Vehicle control firmware"
+      },
+      "firmware_charging_station": {
+        "name": "Charging station firmware"
+      },
+      "firmware_vision_core": {
+        "name": "Vision core firmware"
       }
     },
     "switch": {
@@ -186,6 +204,11 @@
       },
       "charging_limit": {
         "name": "Charging limit"
+      }
+    },
+    "update": {
+      "navimow_os": {
+        "name": "Navimow OS"
       }
     }
   }

@@ -441,7 +441,7 @@ class NavimowProSensorEntityDescription(SensorEntityDescription):
     value_fn: Callable[[dict[str, Any]], Any]
     attributes_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     # Which section of the pro coordinator's per-device data to read:
-    # "maintenance", "connectivity" or "settings".
+    # "maintenance", "connectivity", "settings" or "firmware".
     source: str = "maintenance"
 
 
@@ -457,7 +457,40 @@ def _life_attrs(maintenance: dict[str, Any], component: str) -> dict[str, Any]:
     return out
 
 
+def _module_version(key: str) -> Callable[[dict[str, Any]], Any]:
+    """Value function for one firmware module's version."""
+    return lambda f: (f.get("modules") or {}).get(key)
+
+
+_FIRMWARE_MODULE_SENSORS = (
+    ("firmware_acu", "mdi:chip"),
+    ("firmware_ecu", "mdi:chip"),
+    ("firmware_vcu", "mdi:chip"),
+    ("firmware_charging_station", "mdi:ev-station"),
+    ("firmware_vision_core", "mdi:eye-outline"),
+)
+
+
 PRO_SENSOR_DESCRIPTIONS: tuple[NavimowProSensorEntityDescription, ...] = (
+    NavimowProSensorEntityDescription(
+        key="navimow_os",
+        translation_key="navimow_os",
+        source="firmware",
+        icon="mdi:package-variant-closed",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda f: f.get("os"),
+    ),
+    *(
+        NavimowProSensorEntityDescription(
+            key=key,
+            translation_key=key,
+            source="firmware",
+            icon=icon,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            value_fn=_module_version(key),
+        )
+        for key, icon in _FIRMWARE_MODULE_SENSORS
+    ),
     NavimowProSensorEntityDescription(
         key="blades_life",
         translation_key="blades_life",
