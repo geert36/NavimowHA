@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.0](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.9.1...NavimowHA-v1.10.0) (2026-11-26)
+
+
+### Features
+
+* firmware module versions, Navimow OS sensor and update entity ([62d28f0](https://github.com/geert36/NavimowHA/commit/62d28f0e9a137d7cd99d4fab4681a5204da804b4))
+
+
+### Bug Fixes
+
+* **navimow:** populate firmware version from authList 'firmware' field ([e27998a](https://github.com/geert36/NavimowHA/commit/e27998ad677f6109339db647766091704a7a85f9))
+* replace HA APIs deprecated for 2027.6 and 2027.8 ([ac044a7](https://github.com/geert36/NavimowHA/commit/ac044a70772108dc52625f3e0b62c1dccfc3b6af))
+
 ## [1.9.1](https://github.com/geert36/NavimowHA/compare/NavimowHA-v1.9.0...NavimowHA-v1.9.1) (2026-10-12)
 
 
